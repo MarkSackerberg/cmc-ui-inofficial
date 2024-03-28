@@ -3,7 +3,7 @@ import {
   CandyMachine,
   findAllocationTrackerPda,
   findCandyMachineAuthorityPda,
-  getMplCandyMachineCoreAssetProgramId,
+  getMplCoreCandyMachineCoreProgramId,
   safeFetchCandyGuard,
   safeFetchMintCounterFromSeeds,
 } from "@metaplex-foundation/mpl-core-candy-machine";
@@ -170,7 +170,7 @@ export const getLutAddressesForCandyMachineAndGuard = async (
     delegateRecordV2,
     getSysvar("instructions"),
     getSysvar("slotHashes"),
-    getMplCandyMachineCoreAssetProgramId(umi),
+    getMplCoreCandyMachineCoreProgramId(umi),
     getMplTokenMetadataProgramId(umi),
     getSplTokenProgramId(umi),
     getSplAssociatedTokenProgramId(umi),
