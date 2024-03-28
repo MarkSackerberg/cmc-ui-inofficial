@@ -1,7 +1,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
 
-# Deploy your own Candy Machine easily
-This repository is for Candy Machine V3, Account Version V2. (This is what you have when using the latest sugar version to create the candy machine)
+# Deploy your own Metaplex Core Candy Machine easily
+This repository is for Candy Machine V4. It creates [Metaplex Core](https://developers.metaplex.com/core) Assets. Make sure that you are using this version!
 
 Visible to the user:
 
@@ -12,7 +12,7 @@ Visible to the user:
 ![image](https://github.com/MarkSackerberg/umi-cmv3-ui-inofficial/assets/93528482/7e671345-914a-4d22-bf9f-763006a66560) 
 
 Visible to the admin:
-![image](https://github.com/MarkSackerberg/umi-cmv3-ui-inofficial/assets/93528482/560f29bd-3d25-411a-b099-9609820ca223)
+![image](https://github.com/MarkSackerberg/cmv4-ui-inofficial/assets/93528482/4ff406a7-480b-40d2-b709-c32f678f2d3d)
 
 # What does this repo support?
 You can use this repo to deploy your own candy machine UI. 
@@ -50,7 +50,7 @@ You can use this repo to deploy your own candy machine UI.
 # How to use
 ## Prerequisites
 - [pnpm](https://pnpm.io/installation) as package manager - I used 8.1.0
-- [sugar](https://docs.metaplex.com/developer-tools/sugar/guides/sugar-for-cmv3) to create your candy machine
+- Your deployed candy machine.
 
 ## How to use
 1. Clone this repo
@@ -74,7 +74,7 @@ You can customize the UI by changing the code. If you just want to modify some v
 - Decide if you want to allow multiple mints by a single user at the same time and in your `.env` file set `NEXT_PUBLIC_MULTIMINT` accordingly to `true` or `false`. By default a maximum of 15 NFTs can be minted at the same time this is because of wallet limitations. If you want to have less change `NEXT_PUBLIC_MAXMINTAMOUNT` in `.env`.
 
 ### Fees
-This ui has a buy me a beer feature. Each mint will transfer a very small amount (0.005) of SOL to a tip wallet. If you do not want to support me feel free to change the NEXT_PUBLIC_BUYMARKBEER variable to false. I would appreachiate it though if you leave it on. 🍻
+This ui has a buy me a beer feature. Each mint will transfer a very small amount (0.005) of SOL to a tip wallet. If you do not want to support me feel free to change the NEXT_PUBLIC_BUYMARKBEER variable to false. I would appreciate it though if you leave it on. 🍻
 
 # To do
 - Add NFT Picker of `nftBurn` and `nftPayment` guards

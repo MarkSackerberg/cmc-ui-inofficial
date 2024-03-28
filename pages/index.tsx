@@ -112,7 +112,6 @@ const useCandyMachine = (
 
   return { candyMachine, candyGuard };
 
-
 };
 
 
