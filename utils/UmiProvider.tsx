@@ -4,7 +4,7 @@ import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ReactNode } from "react";
 import { UmiContext } from "./useUmi";
-import { mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
+import { mplCandyMachine } from  "@metaplex-foundation/mpl-core-candy-machine"
 import { createNoopSigner, publicKey, signerIdentity } from "@metaplex-foundation/umi";
 
 export const UmiProvider = ({

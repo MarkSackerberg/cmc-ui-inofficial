@@ -34,9 +34,11 @@ You can use this repo to deploy your own candy machine UI.
   - `mintLimit`
   - `nftBurn`
   - `nftGate`
+  - `nftMintLimit`
   - `nftPayment`
   - `redeemedAmount`
   - `solPayment`
+  - `solFixedFee`
   - `startDate`
   - `token2022Payment`
   - `tokenBurn`
@@ -57,7 +59,7 @@ You can use this repo to deploy your own candy machine UI.
 3. Run `pnpm run dev`
 4. Open your browser at `http://localhost:3000`
 5. Connect your wallet which you used to create the candy machine
-6. You should see a red `initialize` button. Click it and then click `create LUT`
+6. You should see a red `Admin Menu` button. Click it and then click `create LUT`
 7. Copy the LUT address that you see in the green success box and paste it into the `.env` file as the value for `NEXT_PUBLIC_LUT`
 8. Add your candy machine groups to the `settings.tsx` file.  E.g. if one of your groups is called `WL` you should have an entry for it in there, too
 9. Deploy your Candy Machine e.g. to Vercel or Cloudflare Pages

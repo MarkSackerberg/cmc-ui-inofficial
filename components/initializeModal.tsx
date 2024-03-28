@@ -15,13 +15,9 @@ import {
   createStandaloneToast,
 } from "@chakra-ui/react";
 import {
-  CandyGuard,
-  CandyMachine,
-  getMerkleRoot,
-  route,
-} from "@metaplex-foundation/mpl-candy-machine";
-import {
   Umi,
+  generateSigner,
+  percentAmount,
   publicKey,
   sol,
   some,
@@ -37,6 +33,8 @@ import React from "react";
 import { useEffect, useState } from "react";
 import { allowLists } from "@/allowlist";
 import { getRequiredCU } from "@/utils/mintHelper";
+import { createCollectionV1 } from "@metaplex-foundation/mpl-core";
+import { CandyGuard, CandyMachine, addConfigLines, createCandyGuard, createCandyMachineV2, findCandyGuardPda, getMerkleRoot, route, wrap } from "@metaplex-foundation/mpl-core-candy-machine";
 
 // new function createLUT that is called when the button is clicked and which calls createLutForCandyMachineAndGuard and returns a success toast
 const createLut =
@@ -267,7 +265,104 @@ export const InitializeModal = ({ umi, candyMachine, candyGuard }: Props) => {
       </Box>
     );
   });
-
+  const createTestCm = (umi: Umi) => async () => {
+    // When we create a new candy machine with config line settings.
+    const candyMachine = generateSigner(umi);
+    const base = generateSigner(umi);
+    const collectionAddress = generateSigner(umi)
+    console.log("candyMachine ", candyMachine.publicKey)
+    console.log("base ", base.publicKey)
+    console.log("collectionAddress ", collectionAddress.publicKey)
+  
+    let builder = transactionBuilder()
+    .add(createCollectionV1(umi, {
+      collection: collectionAddress,
+      name: "Numbers Core Collection",
+      uri: "https://arweave.net/IEA-aND-c5kpnQt-A1jFKnM14K3ORu-CYH8Ag0FMEk8"
+    }))
+    .add(
+      await createCandyMachineV2(umi, {
+        candyMachine,
+        collection: publicKey("DDbtTL9QzyaenjAYhX6B6YLot6PW5AHt7mm22Ky5ggHV"), //collectionAddress.publicKey,
+        collectionUpdateAuthority: umi.identity, 
+        itemsAvailable: 9, 
+        sellerFeeBasisPoints: percentAmount(10, 2),
+  
+        creators: [
+          {
+            address: umi.identity.publicKey,
+            verified: true,
+            percentageShare: 100,
+          },
+        ],
+        configLineSettings: some({
+          prefixName: 'Degen #',
+          nameLength: 8,
+          prefixUri: 'https://arweave.net/',
+          uriLength: 200,
+          isSequential: false,
+        }),
+      }
+    ))
+    await builder.sendAndConfirm(umi, {
+      confirm: { commitment: "finalized" },
+      send: {
+        skipPreflight: true,
+      },
+    });
+    builder = transactionBuilder()
+      .add(
+        addConfigLines(umi, {
+          authority: umi.identity,
+          candyMachine: candyMachine.publicKey,
+          index: 0,
+          configLines: [
+            { name: "$ID$", uri: "TkklLLQKiO9t9_JPmt-eH_S-VBLMcRjFcgyvIrENBzA" },
+            { name: "$ID$", uri: "wzDArh0Iyd42F5DooElAWYdznkVPKpxfRHWsfNIE1dI" },
+            { name: "$ID$", uri: "SCY90ef6BAxWFFQA8oBo_PqCDDEH79e3QudavaUEEPc" },
+            { name: "$ID$", uri: "PiDSkPrTnld7Qg4wrDatQJmqhMU9j_O0KMLUJF5g4GQ" },
+            { name: "$ID$", uri: "fG02fwxI-mTEj7Rds06a0WHIa572aDjFM3MJbypafdY" },
+            { name: "$ID$", uri: "ccCyqgxX9mNBUuTe9oBhML7WY5WPMbydX2NZy4yGMl4" },
+            { name: "$ID$", uri: "i5BcgAXrPfE9P4mwR7FynJXDOEeB5emOks09SQoI3o4" },
+            { name: "$ID$", uri: "Gu5TpjYWmtgSBD3WcwNaypgvCJc6XJM4e8PKPcuBH4I" },
+            { name: "$ID$", uri: "C824rOJyUgmMb0kWGAqAQn6y7xabYkpz-LH1WxwGP4c" },
+          ],
+        })
+      )
+      await builder.sendAndConfirm(umi, {
+        confirm: { commitment: "finalized" },
+        send: {
+          skipPreflight: true,
+        },
+      });
+      builder = transactionBuilder()
+      .add(
+        createCandyGuard(umi, {
+          base,
+          guards: {
+            solFixedFee: some({
+              lamports: sol(30),
+              destination: umi.identity.publicKey,
+            }),
+            nftMintLimit: some({ id: 1, limit: 1, requiredCollection: collectionAddress.publicKey }),
+          },
+        })
+      )
+  
+      .add(
+        wrap(umi, {
+          candyMachine: candyMachine.publicKey,
+          candyGuard: findCandyGuardPda(umi, { base: base.publicKey }),
+          
+        })
+      );
+        await builder.sendAndConfirm(umi, {
+      confirm: { commitment: "finalized" },
+      send: {
+        skipPreflight: true,
+      },
+    });
+  };
   return (
     <>
       <VStack>
@@ -278,6 +373,10 @@ export const InitializeModal = ({ umi, candyMachine, candyGuard }: Props) => {
             Create LUT
           </Button>
           <Text>Reduces transaction size errors</Text>
+        </HStack>
+        <HStack>
+          <Button onClick={createTestCm(umi)}>create test cm</Button>
+          <Text>Creates a test CM. Logs CM address and Collection Address in the developer console.</Text>
         </HStack>
         <HStack>
           <Button onClick={initializeGuards(umi, candyMachine, candyGuard)}>

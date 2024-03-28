@@ -1,4 +1,4 @@
-import { PublicKey, Some, Umi } from "@metaplex-foundation/umi";
+import { BlockhashWithExpiryBlockHeight, PublicKey, Signer, Some, Transaction, TransactionWithMeta, Umi } from "@metaplex-foundation/umi";
 import { createStandaloneToast } from "@chakra-ui/react";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 
@@ -10,24 +10,24 @@ const detectBotTax = (logs: string[]) => {
 };
 
 type VerifySignatureResult =
-  | { success: true; mint: PublicKey; reason?: never }
+  | { success: true; mintedAssets: PublicKey[]; reason?: never }
   | { success: false; mint?: never; reason: string };
 
-export const verifyTx = async (umi: Umi, signatures: Uint8Array[]) => {
+export const verifyTx = async (umi: Umi, signatures: Uint8Array[], nftSigners: Signer[], blockhash: BlockhashWithExpiryBlockHeight) => {
   const verifySignature = async (
     signature: Uint8Array
   ): Promise<VerifySignatureResult> => {
-    console.log(base58.deserialize(signature))
-    let transaction;
+    console.log(base58.deserialize(signature)[0])
+    let transaction: TransactionWithMeta | null | undefined;
     for (let i = 0; i < 30; i++) {
       transaction = await umi.rpc.getTransaction(signature);
       if (transaction) {
         break;
       }
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    if (!transaction) {
+    if (transaction === undefined || transaction === null) {
       return { success: false, reason: "No TX found" };
     }
 
@@ -35,15 +35,27 @@ export const verifyTx = async (umi: Umi, signatures: Uint8Array[]) => {
       return { success: false, reason: "Bot Tax detected!" };
     }
 
-    return { success: true, mint: transaction.message.accounts[1] };
+    const mintedAssets = nftSigners.filter(signer =>
+      transaction?.message.accounts.some(account => account === signer.publicKey)
+    ).map(signer => signer.publicKey);
+
+
+    return { success: true, mintedAssets };
   };
 
+    //first use umi function to confirm
+  for (let i = 0; i < signatures.length; i++) {
+    await umi.rpc.confirmTransaction(signatures[0], {commitment: "finalized", strategy: { type: "blockhash", ...blockhash } });
+
+  }
+
+  //then make sure that the RPC actually sees the tx (just required for lagging RPCs)
   const stati = await Promise.all(signatures.map(verifySignature));
   let successful: PublicKey[] = [];
   let failed: string[] = []
   stati.forEach((status) => {
     if ((status.success === true)) {
-      successful.push(status.mint);
+      successful.push(...status.mintedAssets);
     } else {
       failed.push(status.reason)
     }

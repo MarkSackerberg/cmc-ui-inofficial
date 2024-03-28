@@ -3,14 +3,19 @@ import {
   CandyMachine,
   GuardSet,
   MintLimit,
+  NftMintCounter,
+  NftMintLimit,
+  fetchNftMintCounter,
+  findNftMintCounterPda,
   safeFetchAllocationTrackerFromSeeds,
   safeFetchMintCounterFromSeeds,
-} from "@metaplex-foundation/mpl-candy-machine";
+} from "@metaplex-foundation/mpl-core-candy-machine";
 import {
   fetchToken,
   findAssociatedTokenPda,
 } from "@metaplex-foundation/mpl-toolbox";
 import {
+  Pda,
   PublicKey,
   SolAmount,
   Some,
@@ -19,6 +24,7 @@ import {
 } from "@metaplex-foundation/umi";
 import { DigitalAssetWithToken } from "@metaplex-foundation/mpl-token-metadata";
 import { createStandaloneToast } from "@chakra-ui/react";
+import { isTemplateExpression } from "typescript";
 
 export interface GuardReturn {
   label: string;
@@ -29,6 +35,10 @@ export interface GuardReturn {
   maxAmount: number;
   mintAmount?: number;
 }
+export type DigitalAssetWithTokenAndNftMintLimit = DigitalAssetWithToken & {
+  nftMintLimit?: number;
+  nftMintLimitPda?: Pda;
+};
 
 export const addressGateChecker = (wallet: PublicKey, address: PublicKey) => {
   if (wallet != address) {
@@ -43,7 +53,7 @@ export const allocationChecker = async (
   guard: {
     label: string;
     guards: GuardSet;
-}
+  }
 ) => {
   const allocation = guard.guards.allocation as Some<Allocation>;
 
@@ -67,7 +77,6 @@ export const allocationChecker = async (
       });
       return allocation.value.limit;
     }
-
   } catch (error) {
     console.error(`AllocationChecker: ${error}`);
     return 0;
@@ -108,7 +117,7 @@ export const mintLimitChecker = async (
   guard: {
     label: string;
     guards: GuardSet;
-}
+  }
 ) => {
   const mintLimit = guard.guards.mintLimit as Some<MintLimit>;
 
@@ -133,6 +142,88 @@ export const mintLimitChecker = async (
   }
 };
 
+export const nftMintLimitChecker = async (
+  umi: Umi,
+  candyMachine: CandyMachine,
+  guard: {
+    label: string;
+    guards: GuardSet;
+  },
+  ownedNfts: DigitalAssetWithTokenAndNftMintLimit[]
+) => {
+  const nftMintLimit = guard.guards.nftMintLimit as Some<NftMintLimit>;
+
+  const collectionAssets = ownedNfts.filter(
+    (el) =>
+      el.metadata.collection.__option === "Some" &&
+      el.metadata.collection.value.key ===
+        nftMintLimit.value.requiredCollection &&
+      el.metadata.collection.value.verified === true
+  );
+  try {
+    let counterPromises = collectionAssets.map((asset) => {
+      const pda = findNftMintCounterPda(umi, {
+        id: nftMintLimit.value.id,
+        mint: asset.publicKey,
+        candyGuard: candyMachine.mintAuthority,
+        candyMachine: candyMachine.publicKey,
+      });
+
+      return fetchNftMintCounter(umi, pda)
+        .then((counterValue) => ({
+          ...asset,
+          nftMintLimit: counterValue.count + 1,
+          nftMintLimitPda: pda,
+        }))
+        .catch((e) => ({
+          ...asset,
+          nftMintLimit: nftMintLimit.value.limit,
+        }));
+    });
+
+    let filteredResults: DigitalAssetWithTokenAndNftMintLimit[] = [];
+    await Promise.all(counterPromises)
+      .then((results) => {
+        filteredResults = results.filter(
+          (item) =>
+            item.nftMintLimit !== undefined &&
+            item.nftMintLimit < nftMintLimit.value.limit + 1
+        );
+      })
+      .catch((error) => {
+        console.error("An error occurred while fetching counters:", error);
+      });
+
+      const resultObject = {
+        nftMintLimitAssets: filteredResults,
+        ownedNfts: ownedNfts.map((asset) => {
+          const matchingAsset = filteredResults.find((result) => result.publicKey === asset.publicKey);
+          if (matchingAsset) {
+            return {
+              ...asset,
+              nftMintLimit: matchingAsset.nftMintLimit,
+              nftMintLimitPda: matchingAsset.nftMintLimitPda,
+            };
+          } else {
+            // If no matching asset found in filteredResults, retain original asset data
+            return {
+              ...asset,
+              nftMintLimit: 0, // or any default value you prefer
+              nftMintLimitPda: undefined, // or any default value you prefer
+            };
+          }
+        }),
+      };
+    return resultObject;
+  } catch (error) {
+    console.error(`mintLimitChecker: ${error}`);
+    return {
+      nftMintLimitAssets: [],
+      ownedNfts,
+    };
+  }
+};
+
 export const ownedNftChecker = async (
   ownedNfts: DigitalAssetWithToken[],
   requiredCollection: PublicKey
@@ -140,7 +231,8 @@ export const ownedNftChecker = async (
   const count = ownedNfts.filter(
     (el) =>
       el.metadata.collection.__option === "Some" &&
-      el.metadata.collection.value.key === requiredCollection
+      el.metadata.collection.value.key === requiredCollection &&
+      el.metadata.collection.value.verified === true
   ).length;
   return count;
 };
@@ -155,9 +247,7 @@ export const allowlistChecker = (
     return false;
   }
   if (
-    !allowLists
-      .get(guardlabel)
-      ?.includes(publicKey(umi.identity.publicKey))
+    !allowLists.get(guardlabel)?.includes(publicKey(umi.identity.publicKey))
   ) {
     return false;
   }
@@ -206,7 +296,8 @@ export const checkTokensRequired = (
     if (
       guard.guards.nftBurn ||
       guard.guards.nftGate ||
-      guard.guards.nftPayment
+      guard.guards.nftPayment ||
+      guard.guards.nftMintLimit
     ) {
       nftBalanceRequired = true;
     }
@@ -219,19 +310,19 @@ export const calculateMintable = (
   mintableAmount: number,
   newAmount: number
 ) => {
-  if (mintableAmount > newAmount){
+  if (mintableAmount > newAmount) {
     mintableAmount = newAmount;
   }
 
   if (!process.env.NEXT_PUBLIC_MAXMINTAMOUNT) return mintableAmount;
   let maxmintamount = 0;
   try {
-    maxmintamount = Number(process.env.NEXT_PUBLIC_MAXMINTAMOUNT)
-  } catch (e){
-    console.error('process.env.NEXT_PUBLIC_MAXMINTAMOUNT is not a number!', e)
+    maxmintamount = Number(process.env.NEXT_PUBLIC_MAXMINTAMOUNT);
+  } catch (e) {
+    console.error("process.env.NEXT_PUBLIC_MAXMINTAMOUNT is not a number!", e);
     return mintableAmount;
   }
-  if (mintableAmount > maxmintamount){
+  if (mintableAmount > maxmintamount) {
     mintableAmount = maxmintamount;
   }
 

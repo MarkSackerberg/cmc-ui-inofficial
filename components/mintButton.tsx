@@ -1,13 +1,10 @@
-import {
-  CandyGuard,
-  CandyMachine,
-  mintV2,
-} from "@metaplex-foundation/mpl-candy-machine";
+import { CandyGuard, CandyMachine, mintV2 } from "@metaplex-foundation/mpl-core-candy-machine";
 import { GuardReturn } from "../utils/checkerHelper";
 import {
   AddressLookupTableInput,
   KeypairSigner,
   PublicKey,
+  Signer,
   Transaction,
   Umi,
   createBigInt,
@@ -45,9 +42,7 @@ import {
   Divider,
   createStandaloneToast,
 } from "@chakra-ui/react";
-import {
-  fetchAddressLookupTable,
-} from "@metaplex-foundation/mpl-toolbox";
+import { fetchAddressLookupTable } from "@metaplex-foundation/mpl-toolbox";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   chooseGuardToUse,
@@ -56,10 +51,12 @@ import {
   GuardButtonList,
   buildTx,
   getRequiredCU,
+  buildTxs,
 } from "../utils/mintHelper";
 import { useSolanaTime } from "@/utils/SolanaTimeContext";
 import { verifyTx } from "@/utils/verifyTx";
 import { base58 } from "@metaplex-foundation/umi/serializers";
+import { AssetV1, fetchAssetV1 } from "@metaplex-foundation/mpl-core";
 
 const updateLoadingText = (
   loadingText: string | undefined,
@@ -77,15 +74,12 @@ const updateLoadingText = (
   setGuardList(newGuardList);
 };
 
-const fetchNft = async (
-  umi: Umi,
-  nftAdress: PublicKey,
-) => {
-  let digitalAsset: DigitalAsset | undefined;
+const fetchNft = async (umi: Umi, nftAdress: PublicKey) => {
+  let digitalAsset: AssetV1 | undefined;
   let jsonMetadata: JsonMetadata | undefined;
   try {
-    digitalAsset = await fetchDigitalAsset(umi, nftAdress);
-    jsonMetadata = await fetchJsonMetadata(umi, digitalAsset.metadata.uri);
+    digitalAsset = await fetchAssetV1(umi, nftAdress);
+    jsonMetadata = await fetchJsonMetadata(umi, digitalAsset.uri);
   } catch (e) {
     console.error(e);
     createStandaloneToast().toast({
@@ -179,63 +173,45 @@ const mintClick = async (
       });
     }
 
-    const mintTxs: Transaction[] = [];
     let nftsigners = [] as KeypairSigner[];
-
-    const latestBlockhash = (await umi.rpc.getLatestBlockhash()).blockhash;
-    
-    const mintArgs = mintArgsBuilder(candyMachine, guardToUse, ownedTokens);
-    const nftMint = generateSigner(umi);
-    const txForSimulation = buildTx(
-      umi,
-      candyMachine,
-      candyGuard,
-      nftMint,
-      guardToUse,
-      mintArgs,
-      tables,
-      latestBlockhash,
-      1_400_000,
-      buyBeer
-    );
-    const requiredCu = await getRequiredCU(umi, txForSimulation);
 
     for (let i = 0; i < mintAmount; i++) {
       const nftMint = generateSigner(umi);
       nftsigners.push(nftMint);
-      const transaction = buildTx(
+    }
+
+    const mintArgsArray = mintArgsBuilder(guardToUse, ownedTokens, mintAmount);
+    console.log("mintArgsArray",mintArgsArray)
+    const latestBlockhash = (await umi.rpc.getLatestBlockhash());
+
+    const mintTxs: { transaction: Transaction; signers: Signer[] }[] =
+      await buildTxs(
         umi,
         candyMachine,
         candyGuard,
-        nftMint,
+        nftsigners,
         guardToUse,
-        mintArgs,
+        mintArgsArray,
         tables,
-        latestBlockhash,
-        requiredCu,
+        latestBlockhash.blockhash,
         buyBeer
       );
-      console.log(transaction)
-      mintTxs.push(transaction);
-    }
     if (!mintTxs.length) {
       console.error("no mint tx built!");
       return;
     }
 
     updateLoadingText(`Please sign`, guardList, guardToUse.label, setGuardList);
-    const signedTransactions = await signAllTransactions(
-      mintTxs.map((transaction, index) => ({
-        transaction,
-        signers: [umi.payer, nftsigners[index]],
-      }))
-    );
+    
+    const signedTransactions = await signAllTransactions(mintTxs);
 
     let signatures: Uint8Array[] = [];
     let amountSent = 0;
     const sendPromises = signedTransactions.map((tx, index) => {
       return umi.rpc
-        .sendTransaction(tx)
+        .sendTransaction(tx, { 
+            skipPreflight: true,
+        })
         .then((signature) => {
           console.log(
             `Transaction ${index + 1} resolved with signature: ${
@@ -270,16 +246,16 @@ const mintClick = async (
       status: "success",
       duration: 3000,
     });
-    
-    const successfulMints = await verifyTx(umi, signatures);
-
+    console.log("vor verify")
+    const successfulMints = await verifyTx(umi, signatures, nftsigners, latestBlockhash);
+    console.log("nach verify")
     updateLoadingText(
       "Fetching your NFT",
       guardList,
       guardToUse.label,
       setGuardList
     );
-
+    console.log("vor fetch nft")
     // Filter out successful mints and map to fetch promises
     const fetchNftPromises = successfulMints.map((mintResult) =>
       fetchNft(umi, mintResult).then((nftData) => ({
@@ -289,7 +265,7 @@ const mintClick = async (
     );
 
     const fetchedNftsResults = await Promise.all(fetchNftPromises);
-
+    console.log("nach fetch nft")
     // Prepare data for setting mintsCreated
     let newMintsCreated: { mint: PublicKey; offChainMetadata: JsonMetadata }[] =
       [];
@@ -305,8 +281,8 @@ const mintClick = async (
 
     // Update mintsCreated only if there are new mints
     if (newMintsCreated.length > 0) {
-        setMintsCreated(newMintsCreated);
-        onOpen();
+      setMintsCreated(newMintsCreated);
+      onOpen();
     }
   } catch (e) {
     console.error(`minting failed because of ${e}`);

@@ -2,7 +2,7 @@ import {
   FreezeTokenPayment,
   GuardSet,
   TokenPayment,
-} from "@metaplex-foundation/mpl-candy-machine";
+} from "@metaplex-foundation/mpl-core-candy-machine";
 import { fetchToken } from "@metaplex-foundation/mpl-toolbox";
 import { PublicKey, Some, Umi } from "@metaplex-foundation/umi";
 import { createStandaloneToast } from "@chakra-ui/react";
@@ -11,7 +11,6 @@ export const checkAtaValid = (
   umi: Umi,
   guards: { label: string; guards: GuardSet }[]
 ) => {
-    console.log("checkAtaValid")
   let atas: PublicKey[] = [];
   guards.forEach((guard) => {
     if (guard.guards.tokenPayment.__option === "Some") {
@@ -26,7 +25,7 @@ export const checkAtaValid = (
   });
   atas.forEach((ata) => {
     fetchToken(umi, ata).catch((e) => {
-      console.log(e);
+      console.error(e);
       createStandaloneToast().toast({
         title: "Your Candy Guard config is incorrect!",
         description: `${ata} is not a Associated Token Account! Minting will fail!`,

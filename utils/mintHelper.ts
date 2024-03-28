@@ -10,16 +10,14 @@ import {
   getMerkleProof,
   safeFetchAllowListProofFromSeeds,
   mintV2,
-} from "@metaplex-foundation/mpl-candy-machine";
-import {
-  DigitalAssetWithToken,
-  TokenStandard,
-} from "@metaplex-foundation/mpl-token-metadata";
+} from "@metaplex-foundation/mpl-core-candy-machine";
+import { TokenStandard, mintArgs } from "@metaplex-foundation/mpl-token-metadata";
 import {
   some,
   Umi,
   transactionBuilder,
   publicKey,
+  PublicKey,
   TransactionBuilder,
   none,
   AddressLookupTableInput,
@@ -27,7 +25,10 @@ import {
   Signer,
   sol,
 } from "@metaplex-foundation/umi";
-import { GuardReturn } from "./checkerHelper";
+import {
+  DigitalAssetWithTokenAndNftMintLimit,
+  GuardReturn,
+} from "./checkerHelper";
 import { Connection } from "@solana/web3.js";
 import {
   setComputeUnitPrice,
@@ -71,194 +72,241 @@ export const chooseGuardToUse = (
 };
 
 export const mintArgsBuilder = (
-  candyMachine: CandyMachine,
   guardToUse: GuardGroup<DefaultGuardSet>,
-  ownedTokens: DigitalAssetWithToken[]
+  ownedTokens: DigitalAssetWithTokenAndNftMintLimit[],
+  amount: number
 ) => {
   const guards = guardToUse.guards;
-  let ruleset = undefined;
-  if (candyMachine.ruleSet.__option === "Some") {
-    ruleset = candyMachine.ruleSet.value;
-  }
+  let mintArgsArray: Partial<DefaultGuardSetMintArgs>[] = [];
+  for (let i = 0; i < amount; i++) {
+    let ruleset = undefined;
 
-  let mintArgs: Partial<DefaultGuardSetMintArgs> = {};
-  if (guards.allocation.__option === "Some") {
-    mintArgs.allocation = some({ id: guards.allocation.value.id });
-  }
-
-  if (guards.allowList.__option === "Some") {
-    const allowlist = allowLists.get(guardToUse.label);
-    if (!allowlist) {
-      console.error(`allowlist for guard ${guardToUse.label} not found!`);
-    } else {
-      mintArgs.allowList = some({ merkleRoot: getMerkleRoot(allowlist) });
+    let mintArgs: Partial<DefaultGuardSetMintArgs> = {};
+    if (guards.allocation.__option === "Some") {
+      mintArgs.allocation = some({ id: guards.allocation.value.id });
     }
-  }
 
-  if (guards.freezeSolPayment.__option === "Some") {
-    mintArgs.freezeSolPayment = some({
-      destination: guards.freezeSolPayment.value.destination,
-    });
-  }
-
-  if (guards.freezeTokenPayment.__option === "Some") {
-    mintArgs.freezeTokenPayment = some({
-      destinationAta: guards.freezeTokenPayment.value.destinationAta,
-      mint: guards.freezeTokenPayment.value.mint,
-      nftRuleSet: ruleset,
-    });
-  }
-
-  if (guards.gatekeeper.__option === "Some") {
-    mintArgs.gatekeeper = some({
-      expireOnUse: guards.gatekeeper.value.expireOnUse,
-      gatekeeperNetwork: guards.gatekeeper.value.gatekeeperNetwork,
-    });
-  }
-
-  if (guards.mintLimit.__option === "Some") {
-    mintArgs.mintLimit = some({ id: guards.mintLimit.value.id });
-  }
-
-  if (guards.nftBurn.__option === "Some") {
-    const requiredCollection = guards.nftBurn.value.requiredCollection;
-    //TODO: have the use choose the NFT
-    const nft = ownedTokens.find(
-      (el) =>
-        el.metadata.collection.__option === "Some" &&
-        el.metadata.collection.value.key === requiredCollection
-    );
-    if (!nft) {
-      console.error("no nft to burn found!");
-    } else {
-      let tokenStandard = TokenStandard.NonFungible;
-      let ruleSet = undefined;
-      if (nft.metadata.tokenStandard.__option === "Some") {
-        if (
-          nft.metadata.tokenStandard.value ===
-          TokenStandard.ProgrammableNonFungible
-        ) {
-          tokenStandard = TokenStandard.ProgrammableNonFungible;
-          if (
-            nft.metadata.programmableConfig.__option === "Some" &&
-            nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
-          ) {
-            ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
-          }
-        }
+    if (guards.allowList.__option === "Some") {
+      const allowlist = allowLists.get(guardToUse.label);
+      if (!allowlist) {
+        console.error(`allowlist for guard ${guardToUse.label} not found!`);
+      } else {
+        mintArgs.allowList = some({ merkleRoot: getMerkleRoot(allowlist) });
       }
-      mintArgs.nftBurn = some({
-        mint: nft.publicKey,
-        requiredCollection,
-        tokenStandard,
-        ruleSet,
+    }
+
+    if (guards.freezeSolPayment.__option === "Some") {
+      mintArgs.freezeSolPayment = some({
+        destination: guards.freezeSolPayment.value.destination,
       });
     }
-  }
 
-  if (guards.nftGate.__option === "Some") {
-    const requiredCollection = guards.nftGate.value.requiredCollection;
-    const nft = ownedTokens.find(
-      (el) =>
-        el.metadata.collection.__option === "Some" &&
-        el.metadata.collection.value.key === requiredCollection
-    );
-    if (!nft) {
-      console.error("no nft for tokenGate found!");
-    } else {
-      let tokenStandard = TokenStandard.NonFungible;
-      let ruleSet = undefined;
-      if (nft.metadata.tokenStandard.__option === "Some") {
-        if (
-          nft.metadata.tokenStandard.value ===
-          TokenStandard.ProgrammableNonFungible
-        ) {
-          tokenStandard = TokenStandard.ProgrammableNonFungible;
-          if (
-            nft.metadata.programmableConfig.__option === "Some" &&
-            nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
-          ) {
-            ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
-          }
-        }
-      }
-      mintArgs.nftGate = some({
-        mint: nft.publicKey,
-        requiredCollection,
-        tokenStandard,
-        ruleSet,
+    if (guards.freezeTokenPayment.__option === "Some") {
+      mintArgs.freezeTokenPayment = some({
+        destinationAta: guards.freezeTokenPayment.value.destinationAta,
+        mint: guards.freezeTokenPayment.value.mint,
+        nftRuleSet: ruleset,
       });
     }
-  }
 
-  if (guards.nftPayment.__option === "Some") {
-    const requiredCollection = guards.nftPayment.value.requiredCollection;
-    const nft = ownedTokens.find(
-      (el) =>
-        el.metadata.collection.__option === "Some" &&
-        el.metadata.collection.value.key === requiredCollection
-    );
-    if (!nft) {
-      console.error("no nft for tokenGate found!");
-    } else {
-      let tokenStandard = TokenStandard.NonFungible;
-      let ruleSet = undefined;
-      if (nft.metadata.tokenStandard.__option === "Some") {
-        if (
-          nft.metadata.tokenStandard.value ===
-          TokenStandard.ProgrammableNonFungible
-        ) {
-          tokenStandard = TokenStandard.ProgrammableNonFungible;
-          if (
-            nft.metadata.programmableConfig.__option === "Some" &&
-            nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
-          ) {
-            ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
-          }
-        }
-      }
-      mintArgs.nftPayment = some({
-        destination: guards.nftPayment.value.destination,
-        mint: nft.publicKey,
-        requiredCollection,
-        tokenStandard,
-        ruleSet,
+    if (guards.gatekeeper.__option === "Some") {
+      mintArgs.gatekeeper = some({
+        expireOnUse: guards.gatekeeper.value.expireOnUse,
+        gatekeeperNetwork: guards.gatekeeper.value.gatekeeperNetwork,
       });
     }
-  }
 
-  if (guards.solPayment.__option === "Some") {
-    mintArgs.solPayment = some({
-      destination: guards.solPayment.value.destination,
-    });
-  }
+    if (guards.mintLimit.__option === "Some") {
+      mintArgs.mintLimit = some({ id: guards.mintLimit.value.id });
+    }
 
-  if (guards.thirdPartySigner.__option === "Some") {
-    console.error("not supported. you need a backend");
-  }
+    if (guards.nftBurn.__option === "Some") {
+      const requiredCollection = guards.nftBurn.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection
+      );
+      if (!nft) {
+        console.error("no nft to burn found!");
+      } else {
+        let tokenStandard = TokenStandard.NonFungible;
+        let ruleSet = undefined;
+        if (nft.metadata.tokenStandard.__option === "Some") {
+          if (
+            nft.metadata.tokenStandard.value ===
+            TokenStandard.ProgrammableNonFungible
+          ) {
+            tokenStandard = TokenStandard.ProgrammableNonFungible;
+            if (
+              nft.metadata.programmableConfig.__option === "Some" &&
+              nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
+            ) {
+              ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
+            }
+          }
+        }
+        mintArgs.nftBurn = some({
+          mint: nft.publicKey,
+          requiredCollection,
+          tokenStandard,
+          ruleSet,
+        });
+      }
+    }
 
-  if (guards.token2022Payment.__option === "Some") {
-    mintArgs.token2022Payment = some({
-      destinationAta: guards.token2022Payment.value.destinationAta,
-      mint: guards.token2022Payment.value.mint,
-    });
-  }
+    if (guards.nftGate.__option === "Some") {
+      const requiredCollection = guards.nftGate.value.requiredCollection;
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection
+      );
+      if (!nft) {
+        console.error("no nft for tokenGate found!");
+      } else {
+        let tokenStandard = TokenStandard.NonFungible;
+        let ruleSet = undefined;
+        if (nft.metadata.tokenStandard.__option === "Some") {
+          if (
+            nft.metadata.tokenStandard.value ===
+            TokenStandard.ProgrammableNonFungible
+          ) {
+            tokenStandard = TokenStandard.ProgrammableNonFungible;
+            if (
+              nft.metadata.programmableConfig.__option === "Some" &&
+              nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
+            ) {
+              ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
+            }
+          }
+        }
+        mintArgs.nftGate = some({
+          mint: nft.publicKey,
+          requiredCollection,
+          tokenStandard,
+          ruleSet,
+        });
+      }
+    }
 
-  if (guards.tokenBurn.__option === "Some") {
-    mintArgs.tokenBurn = some({ mint: guards.tokenBurn.value.mint });
-  }
+    if (guards.nftMintLimit.__option === "Some") {
+      const requiredCollection = guards.nftMintLimit.value.requiredCollection;
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection &&
+          el.nftMintLimit! > 0
+      );
+      if (!nft ||!nft.nftMintLimit) {
+        console.error("no nft for nftMintLimit found!");
+      } else {
+        nft.nftMintLimit = nft.nftMintLimit-1;
 
-  if (guards.tokenGate.__option === "Some") {
-    mintArgs.tokenGate = some({ mint: guards.tokenGate.value.mint });
-  }
+        let tokenStandard = TokenStandard.NonFungible;
+        let ruleSet = undefined;
+        if (nft.metadata.tokenStandard.__option === "Some") {
+          if (
+            nft.metadata.tokenStandard.value ===
+            TokenStandard.ProgrammableNonFungible
+          ) {
+            tokenStandard = TokenStandard.ProgrammableNonFungible;
+            if (
+              nft.metadata.programmableConfig.__option === "Some" &&
+              nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
+            ) {
+              ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
+            }
+          }
+        }
 
-  if (guards.tokenPayment.__option === "Some") {
-    mintArgs.tokenPayment = some({
-      destinationAta: guards.tokenPayment.value.destinationAta,
-      mint: guards.tokenPayment.value.mint,
-    });
+        mintArgs.nftMintLimit = some({
+          id: guards.nftMintLimit.value.id,
+          mint: nft.publicKey,
+          requiredCollection,
+          tokenStandard,
+          ruleSet,
+        });
+      }
+    }
+
+    if (guards.nftPayment.__option === "Some") {
+      const requiredCollection = guards.nftPayment.value.requiredCollection;
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection
+      );
+      if (!nft) {
+        console.error("no nft for nftPayment found!");
+      } else {
+        let tokenStandard = TokenStandard.NonFungible;
+        let ruleSet = undefined;
+        if (nft.metadata.tokenStandard.__option === "Some") {
+          if (
+            nft.metadata.tokenStandard.value ===
+            TokenStandard.ProgrammableNonFungible
+          ) {
+            tokenStandard = TokenStandard.ProgrammableNonFungible;
+            if (
+              nft.metadata.programmableConfig.__option === "Some" &&
+              nft.metadata.programmableConfig.value.ruleSet.__option === "Some"
+            ) {
+              ruleSet = nft.metadata.programmableConfig.value.ruleSet.value;
+            }
+          }
+        }
+        mintArgs.nftPayment = some({
+          destination: guards.nftPayment.value.destination,
+          mint: nft.publicKey,
+          requiredCollection,
+          tokenStandard,
+          ruleSet,
+        });
+      }
+    }
+
+    if (guards.solFixedFee.__option === "Some") {
+      mintArgs.solFixedFee = some({
+        destination: guards.solFixedFee.value.destination,
+      });
+    }
+
+    if (guards.solPayment.__option === "Some") {
+      mintArgs.solPayment = some({
+        destination: guards.solPayment.value.destination,
+      });
+    }
+
+    if (guards.thirdPartySigner.__option === "Some") {
+      console.error("not supported. you need a backend");
+    }
+
+    if (guards.token2022Payment.__option === "Some") {
+      mintArgs.token2022Payment = some({
+        destinationAta: guards.token2022Payment.value.destinationAta,
+        mint: guards.token2022Payment.value.mint,
+      });
+    }
+
+    if (guards.tokenBurn.__option === "Some") {
+      mintArgs.tokenBurn = some({ mint: guards.tokenBurn.value.mint });
+    }
+
+    if (guards.tokenGate.__option === "Some") {
+      mintArgs.tokenGate = some({ mint: guards.tokenGate.value.mint });
+    }
+
+    if (guards.tokenPayment.__option === "Some") {
+      mintArgs.tokenPayment = some({
+        destinationAta: guards.tokenPayment.value.destinationAta,
+        mint: guards.tokenPayment.value.mint,
+      });
+    }
+    mintArgsArray.push(mintArgs)
   }
-  return mintArgs;
+  return mintArgsArray;
 };
 
 // build route instruction for allowlist guard
@@ -349,21 +397,17 @@ export const buildTx = (
   let tx = transactionBuilder().add(
     mintV2(umi, {
       candyMachine: candyMachine.publicKey,
-      collectionMint: candyMachine.collectionMint,
-      collectionUpdateAuthority: candyMachine.authority,
-      nftMint,
+      collection: candyMachine.collectionMint,
+      asset: nftMint,
       group: guardToUse.label === "default" ? none() : some(guardToUse.label),
       candyGuard: candyGuard.publicKey,
       mintArgs,
-      tokenStandard: candyMachine.tokenStandard,
     })
   );
   if (buyBeer) {
     tx = tx.prepend(
       transferSol(umi, {
-        destination: publicKey(
-          "BeeryDvghgcKPTUw3N3bdFDFFWhTWdWHnsLuVebgsGSD"
-        ),
+        destination: publicKey("BeeryDvghgcKPTUw3N3bdFDFFWhTWdWHnsLuVebgsGSD"),
         amount: sol(Number(0.005)),
       })
     );
@@ -373,6 +417,80 @@ export const buildTx = (
   tx = tx.setAddressLookupTables(luts);
   tx = tx.setBlockhash(latestBlockhash);
   return tx.build(umi);
+};
+
+export const buildTxs = async (
+  umi: Umi,
+  candyMachine: CandyMachine,
+  candyGuard: CandyGuard,
+  nftMints: Signer[],
+  guardToUse:
+    | GuardGroup<DefaultGuardSet>
+    | {
+        label: string;
+        guards: undefined;
+      },
+  mintArgsArray: Partial<DefaultGuardSetMintArgs>[] | undefined,
+  luts: AddressLookupTableInput[],
+  latestBlockhash: string,
+  buyBeer: boolean
+) => {
+  const newBuilder = transactionBuilder()
+    .prepend(setComputeUnitPrice(umi, { microLamports: 5 }))
+    .prepend(setComputeUnitLimit(umi, { units: 1400000 }))
+    .setBlockhash(latestBlockhash);
+  let builder = newBuilder;
+  if (buyBeer) {
+    builder = builder.add(
+      transferSol(umi, {
+        destination: publicKey("BeeryDvghgcKPTUw3N3bdFDFFWhTWdWHnsLuVebgsGSD"),
+        amount: sol(Number(0.005 * nftMints.length)),
+      })
+    );
+  }
+  const transactions: { transaction: Transaction; signers: Signer[] }[] = [];
+  for (let i = 0; i < nftMints.length; i++) {
+    let before = builder;
+    let mintArgs = undefined;
+    if (mintArgsArray){
+      mintArgs = mintArgsArray[i]
+    }
+    builder = builder.add(
+      mintV2(umi, {
+        candyMachine: candyMachine.publicKey,
+        collection: candyMachine.collectionMint,
+        asset: nftMints[i],
+        group: guardToUse.label === "default" ? none() : some(guardToUse.label),
+        candyGuard: candyGuard.publicKey,
+        mintArgs,
+      })
+    );
+    if (!builder.fitsInOneTransaction(umi)) {
+      before = before.setAddressLookupTables(luts);
+      const units = await getRequiredCU(umi, before.build(umi));
+      let [CU, withoutCU] = before.splitByIndex(1); //remove computeUnitLimit to allow adding it again
+      const withCU = withoutCU.prepend(setComputeUnitLimit(umi, { units }));
+      transactions.push({
+        transaction: withCU.build(umi),
+        signers: withCU.getSigners(umi),
+      });
+      builder = newBuilder;
+      i = i - 1;
+      continue;
+    }
+    if (i === nftMints.length - 1) {
+      builder = builder.setAddressLookupTables(luts);
+      const units = await getRequiredCU(umi, builder.build(umi));
+      let [CU, withoutCU] = builder.splitByIndex(1); //remove computeUnitLimit to allow adding it again
+      const withCU = withoutCU.prepend(setComputeUnitLimit(umi, { units }));
+      transactions.push({
+        transaction: withCU.build(umi),
+        signers: withCU.getSigners(umi),
+      });
+    }
+  }
+
+  return transactions;
 };
 
 // simulate CU based on Sammys gist https://gist.github.com/stegaBOB/7c0cdc916db4524dd9c285f9e4309475
@@ -388,4 +506,4 @@ export const getRequiredCU = async (umi: Umi, transaction: Transaction) => {
     return defaultCU;
   }
   return simulatedTx.value.unitsConsumed + 20_000 || defaultCU;
-}
+};

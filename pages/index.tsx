@@ -7,7 +7,7 @@ import { DigitalAssetWithToken, JsonMetadata } from "@metaplex-foundation/mpl-to
 import dynamic from "next/dynamic";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { useUmi } from "../utils/useUmi";
-import { fetchCandyMachine, safeFetchCandyGuard, CandyGuard, CandyMachine, AccountVersion } from "@metaplex-foundation/mpl-candy-machine"
+import { fetchCandyMachine, safeFetchCandyGuard, CandyGuard, CandyMachine, AccountVersion } from "@metaplex-foundation/mpl-core-candy-machine"
 import styles from "../styles/Home.module.css";
 import { guardChecker } from "../utils/checkAllowed";
 import { Center, Card, CardHeader, CardBody, StackDivider, Heading, Stack, useToast, Text, Skeleton, useDisclosure, Button, Modal, ModalBody, ModalCloseButton, ModalContent, Image, ModalHeader, ModalOverlay, Box, Divider, VStack, Flex } from '@chakra-ui/react';
@@ -269,7 +269,7 @@ export default function Home() {
         {umi.identity.publicKey === candyMachine?.authority ? (
           <>
             <Center>
-              <Button backgroundColor={"red.200"} marginTop={"10"} onClick={onInitializerOpen}>Initialize Everything!</Button>
+              <Button backgroundColor={"red.200"} marginTop={"10"} onClick={onInitializerOpen}>Admin Menu</Button>
             </Center>
             <Modal isOpen={isInitializerOpen} onClose={onInitializerClose}>
               <ModalOverlay />
