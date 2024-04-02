@@ -24,6 +24,7 @@ import {
   Transaction,
   Signer,
   sol,
+  BlockhashWithExpiryBlockHeight,
 } from "@metaplex-foundation/umi";
 import {
   DigitalAssetWithTokenAndNftMintLimit,
@@ -390,7 +391,7 @@ export const buildTx = (
       },
   mintArgs: Partial<DefaultGuardSetMintArgs> | undefined,
   luts: AddressLookupTableInput[],
-  latestBlockhash: string,
+  latestBlockhash: BlockhashWithExpiryBlockHeight,
   units: number,
   buyBeer: boolean
 ) => {

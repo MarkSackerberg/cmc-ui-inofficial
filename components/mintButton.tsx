@@ -149,12 +149,10 @@ const mintClick = async (
         duration: 900,
         isClosable: true,
       });
-      await routeBuild.sendAndConfirm(umi, {
-        confirm: { commitment: "processed" },
-        send: {
-          skipPreflight: true,
-        },
-      });
+      const latestBlockhash = (await umi.rpc.getLatestBlockhash({commitment: "finalized"}));
+      routeBuild.setBlockhash(latestBlockhash)
+      await umi.rpc
+      .sendTransaction(routeBuild.build(umi), { skipPreflight:true, maxRetries: 1, preflightCommitment: "finalized", commitment: "finalized" })
     }
 
     // fetch LUT
@@ -182,7 +180,7 @@ const mintClick = async (
 
     const mintArgsArray = mintArgsBuilder(guardToUse, ownedTokens, mintAmount);
     console.log("mintArgsArray",mintArgsArray)
-    const latestBlockhash = (await umi.rpc.getLatestBlockhash());
+    const latestBlockhash = (await umi.rpc.getLatestBlockhash({commitment: "finalized"}));
 
     const mintTxs: { transaction: Transaction; signers: Signer[] }[] =
       await buildTxs(
@@ -209,9 +207,7 @@ const mintClick = async (
     let amountSent = 0;
     const sendPromises = signedTransactions.map((tx, index) => {
       return umi.rpc
-        .sendTransaction(tx, { 
-            skipPreflight: true,
-        })
+        .sendTransaction(tx, { skipPreflight:true, maxRetries: 1, preflightCommitment: "finalized", commitment: "finalized" })
         .then((signature) => {
           console.log(
             `Transaction ${index + 1} resolved with signature: ${
@@ -247,7 +243,7 @@ const mintClick = async (
       duration: 3000,
     });
     console.log("vor verify")
-    const successfulMints = await verifyTx(umi, signatures, nftsigners, latestBlockhash);
+    const successfulMints = await verifyTx(umi, signatures, nftsigners, latestBlockhash, "finalized");
     console.log("nach verify")
     updateLoadingText(
       "Fetching your NFT",
