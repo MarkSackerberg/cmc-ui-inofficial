@@ -11,7 +11,10 @@ import {
   safeFetchAllowListProofFromSeeds,
   mintV2,
 } from "@metaplex-foundation/mpl-core-candy-machine";
-import { TokenStandard, mintArgs } from "@metaplex-foundation/mpl-token-metadata";
+import {
+  TokenStandard,
+  mintArgs,
+} from "@metaplex-foundation/mpl-token-metadata";
 import {
   some,
   Umi,
@@ -200,10 +203,10 @@ export const mintArgsBuilder = (
           el.metadata.collection.value.key === requiredCollection &&
           el.nftMintLimit! > 0
       );
-      if (!nft ||!nft.nftMintLimit) {
+      if (!nft || !nft.nftMintLimit) {
         console.error("no nft for nftMintLimit found!");
       } else {
-        nft.nftMintLimit = nft.nftMintLimit-1;
+        nft.nftMintLimit = nft.nftMintLimit - 1;
 
         let tokenStandard = TokenStandard.NonFungible;
         let ruleSet = undefined;
@@ -305,7 +308,7 @@ export const mintArgsBuilder = (
         mint: guards.tokenPayment.value.mint,
       });
     }
-    mintArgsArray.push(mintArgs)
+    mintArgsArray.push(mintArgs);
   }
   return mintArgsArray;
 };
@@ -414,7 +417,11 @@ export const buildTx = (
     );
   }
   tx = tx.prepend(setComputeUnitLimit(umi, { units }));
-  tx = tx.prepend(setComputeUnitPrice(umi, { microLamports: 500 }));
+  tx = tx.prepend(
+    setComputeUnitPrice(umi, {
+      microLamports: parseInt(process.env.NEXT_PUBLIC_MICROLAMPORTS ?? "1001"),
+    })
+  );
   tx = tx.setAddressLookupTables(luts);
   tx = tx.setBlockhash(latestBlockhash);
   return tx.build(umi);
@@ -453,8 +460,8 @@ export const buildTxs = async (
   for (let i = 0; i < nftMints.length; i++) {
     let before = builder;
     let mintArgs = undefined;
-    if (mintArgsArray){
-      mintArgs = mintArgsArray[i]
+    if (mintArgsArray) {
+      mintArgs = mintArgsArray[i];
     }
     builder = builder.add(
       mintV2(umi, {
