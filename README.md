@@ -1,7 +1,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
 
 # Deploy your own Metaplex Core Candy Machine easily
-This repository is for Candy Machine V4. It creates [Metaplex Core](https://developers.metaplex.com/core) Assets. Make sure that you are using this version!
+This repository is for [Candy Machine Core](https://developers.metaplex.com/core-candy-machine). It creates [Metaplex Core](https://developers.metaplex.com/core) Assets. Make sure that you are using this version!
 
 Visible to the user:
 
