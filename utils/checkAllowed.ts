@@ -2,6 +2,7 @@ import {
   AddressGate,
   Allocation,
   AssetBurn,
+  AssetPayment,
   CandyGuard,
   CandyMachine,
   EndDate,
@@ -244,7 +245,7 @@ export const guardChecker = async (
     }
 
     if (singleGuard.assetPayment.__option === "Some") {
-      const assetPayment = singleGuard.assetBurn as Some<AssetBurn>;
+      const assetPayment = singleGuard.assetPayment as Some<AssetPayment>;
       const payableAmount = await ownedCoreAssetChecker(
         ownedCoreAssets,
         assetPayment.value.requiredCollection
