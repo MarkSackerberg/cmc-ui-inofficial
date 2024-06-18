@@ -1,11 +1,14 @@
 import {
   Allocation,
+  AssetMintLimit,
   CandyMachine,
   GuardSet,
   MintLimit,
   NftMintCounter,
   NftMintLimit,
+  fetchAssetMintCounter,
   fetchNftMintCounter,
+  findAssetMintCounterPda,
   findNftMintCounterPda,
   safeFetchAllocationTrackerFromSeeds,
   safeFetchMintCounterFromSeeds,
@@ -25,6 +28,7 @@ import {
 import { DigitalAssetWithToken } from "@metaplex-foundation/mpl-token-metadata";
 import { createStandaloneToast } from "@chakra-ui/react";
 import { isTemplateExpression } from "typescript";
+import { DasApiAsset } from "@metaplex-foundation/digital-asset-standard-api";
 
 export interface GuardReturn {
   label: string;
@@ -39,6 +43,11 @@ export type DigitalAssetWithTokenAndNftMintLimit = DigitalAssetWithToken & {
   nftMintLimit?: number;
   nftMintLimitPda?: Pda;
 };
+
+export type DasApiAssetAndAssetMintLimit = DasApiAsset & {
+  assetMintLimit?: number;
+  assetMintLimitPda?: Pda;
+}
 
 export const addressGateChecker = (wallet: PublicKey, address: PublicKey) => {
   if (wallet != address) {
@@ -224,6 +233,86 @@ export const nftMintLimitChecker = async (
   }
 };
 
+export const assetMintLimitChecker = async (
+  umi: Umi,
+  candyMachine: CandyMachine,
+  guard: {
+    label: string;
+    guards: GuardSet;
+  },
+  ownedCoreAssets: DasApiAssetAndAssetMintLimit[]
+) => {
+  const assetMintLimit = guard.guards.assetMintLimit as Some<AssetMintLimit>;
+
+  const collectionAssets = ownedCoreAssets.filter(
+    (el) =>
+      el.grouping[0].group_value ===
+        assetMintLimit.value.requiredCollection
+  );
+  try {
+    let counterPromises = collectionAssets.map((asset) => {
+      const pda = findAssetMintCounterPda(umi, {
+        id: assetMintLimit.value.id,
+        asset: asset.id,
+        candyGuard: candyMachine.mintAuthority,
+        candyMachine: candyMachine.publicKey,
+      });
+
+      return fetchAssetMintCounter(umi, pda)
+        .then((counterValue) => ({
+          ...asset,
+          assetMintLimit: counterValue.count + 1,
+          assetMintLimitPda: pda,
+        }))
+        .catch((e) => ({
+          ...asset,
+          assetMintLimit: assetMintLimit.value.limit,
+        }));
+    });
+
+    let filteredResults: DasApiAssetAndAssetMintLimit[] = [];
+    await Promise.all(counterPromises)
+      .then((results) => {
+        filteredResults = results.filter(
+          (item) =>
+            item.assetMintLimit !== undefined &&
+            item.assetMintLimit < assetMintLimit.value.limit + 1
+        );
+      })
+      .catch((error) => {
+        console.error("An error occurred while fetching counters:", error);
+      });
+
+      const resultObject = {
+        assetMintLimitAssets: filteredResults,
+        ownedCoreAssets: ownedCoreAssets.map((asset) => {
+          const matchingAsset = filteredResults.find((result) => result.id === asset.id);
+          if (matchingAsset) {
+            return {
+              ...asset,
+              assetMintLimit: matchingAsset.assetMintLimit,
+              nftMintLimitPda: matchingAsset.assetMintLimitPda,
+            };
+          } else {
+            // If no matching asset found in filteredResults, retain original asset data
+            return {
+              ...asset,
+              assetMintLimit: 0, // or any default value you prefer
+              assetMintLimitPda: undefined, // or any default value you prefer
+            };
+          }
+        }),
+      };
+    return resultObject;
+  } catch (error) {
+    console.error(`assetLimitChecker: ${error}`);
+    return {
+      assetMintLimitAssets: [],
+      ownedCoreAssets,
+    };
+  }
+};
+
 export const ownedNftChecker = async (
   ownedNfts: DigitalAssetWithToken[],
   requiredCollection: PublicKey
@@ -233,6 +322,17 @@ export const ownedNftChecker = async (
       el.metadata.collection.__option === "Some" &&
       el.metadata.collection.value.key === requiredCollection &&
       el.metadata.collection.value.verified === true
+  ).length;
+  return count;
+};
+
+export const ownedCoreAssetChecker = async (
+  ownedNfts: DasApiAsset[],
+  requiredCollection: PublicKey
+) => {
+  const count = ownedNfts.filter(
+    (el) =>
+      el.grouping[0].group_value === requiredCollection
   ).length;
   return count;
 };
@@ -304,6 +404,25 @@ export const checkTokensRequired = (
   });
 
   return nftBalanceRequired;
+};
+
+export const checkCoreAssetsRequired = (
+  guards: { label: string; guards: GuardSet }[]
+) => {
+  let coreAssetBalanceRequired: boolean = false;
+  guards.forEach((guard) => {
+    if (
+      guard.guards.assetBurn ||
+      guard.guards.assetBurnMulti ||
+      guard.guards.assetPayment ||
+      guard.guards.assetPaymentMulti ||
+      guard.guards.assetMintLimit
+    ) {
+      coreAssetBalanceRequired = true;
+    }
+  });
+
+  return coreAssetBalanceRequired;
 };
 
 export const calculateMintable = (
