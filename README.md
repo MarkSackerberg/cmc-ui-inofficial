@@ -29,7 +29,9 @@ You can use this repo to deploy your own candy machine UI.
   - `allocation`
   - `allowlist`
   - `assetBurn`
+  - `assetBurnMulti`
   - `assetPayment`
+  - `assetPaymentMulti`
   - `edition`
   - `endDate`
   - `freezeSolPayment`
