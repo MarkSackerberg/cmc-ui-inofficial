@@ -3,6 +3,7 @@ import {
   Allocation,
   AssetBurn,
   AssetPayment,
+  AssetPaymentMulti,
   CandyGuard,
   CandyMachine,
   EndDate,
@@ -251,6 +252,26 @@ export const guardChecker = async (
         assetPayment.value.requiredCollection
       );
       mintableAmount = calculateMintable(mintableAmount, payableAmount);
+      if (payableAmount === 0) {
+        guardReturn.push({
+          label: eachGuard.label,
+          allowed: false,
+          reason: "No Asset to pay!",
+          maxAmount: 0,
+        });
+        console.info(`${eachGuard.label}: No Asset to pay!`);
+        continue;
+      }
+    }
+
+    if (singleGuard.assetPaymentMulti.__option === "Some") {
+      const assetPaymentMulti = singleGuard.assetPaymentMulti as Some<AssetPaymentMulti>;
+      const payableAmount = await ownedCoreAssetChecker(
+        ownedCoreAssets,
+        assetPaymentMulti.value.requiredCollection
+      );
+      const multiAmount = payableAmount / assetPaymentMulti.value.num;
+      mintableAmount = calculateMintable(mintableAmount, multiAmount);
       if (payableAmount === 0) {
         guardReturn.push({
           label: eachGuard.label,

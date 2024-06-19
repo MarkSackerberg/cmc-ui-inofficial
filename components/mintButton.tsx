@@ -178,7 +178,7 @@ const mintClick = async (
       nftsigners.push(nftMint);
     }
 
-    const mintArgsArray = mintArgsBuilder(guardToUse, ownedTokens, mintAmount);
+    const mintArgsArray = mintArgsBuilder(guardToUse, ownedTokens, ownedCoreAssets, mintAmount);
     console.log("mintArgsArray",mintArgsArray)
     const latestBlockhash = (await umi.rpc.getLatestBlockhash({commitment: "finalized"}));
 

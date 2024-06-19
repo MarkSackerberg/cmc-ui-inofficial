@@ -30,6 +30,7 @@ import {
   BlockhashWithExpiryBlockHeight,
 } from "@metaplex-foundation/umi";
 import {
+  DasApiAssetAndAssetMintLimit,
   DigitalAssetWithTokenAndNftMintLimit,
   GuardReturn,
 } from "./checkerHelper";
@@ -78,6 +79,7 @@ export const chooseGuardToUse = (
 export const mintArgsBuilder = (
   guardToUse: GuardGroup<DefaultGuardSet>,
   ownedTokens: DigitalAssetWithTokenAndNftMintLimit[],
+  ownedCoreAssets: DasApiAssetAndAssetMintLimit[],
   amount: number
 ) => {
   const guards = guardToUse.guards;
@@ -117,6 +119,25 @@ export const mintArgsBuilder = (
       }
     }
 
+    if (guards.assetBurnMulti.__option === "Some") {
+      const requiredCollection = guards.assetBurnMulti.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const assets = ownedCoreAssets.filter(
+        (el) =>
+          el.grouping &&
+          el.grouping[0] &&
+          el.grouping[0].group_value === requiredCollection
+      );
+      if (!assets) {
+        console.error("no asset to burn found!");
+      } else {
+        mintArgs.assetBurnMulti = some({
+          assets: assets.map(asset => asset.id),
+          requiredCollection,
+        });
+      }
+    }
+
     if (guards.assetPayment.__option === "Some") {
       const requiredCollection = guards.assetPayment.value.requiredCollection;
       //TODO: have the use choose the NFT
@@ -132,6 +153,26 @@ export const mintArgsBuilder = (
           asset: nft.publicKey,
           requiredCollection,
           destination: guards.assetPayment.value.destination
+        });
+      }
+    }
+
+    if (guards.assetPaymentMulti.__option === "Some") {
+      const requiredCollection = guards.assetPaymentMulti.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const assets = ownedCoreAssets.filter(
+        (el) =>
+          el.grouping &&
+          el.grouping[0] &&
+          el.grouping[0].group_value === requiredCollection
+      );
+      if (!assets) {
+        console.error("no asset to pay found!");
+      } else {
+        mintArgs.assetPaymentMulti = some({
+          assets: assets.map(asset => asset.id),
+          requiredCollection,
+          destination: guards.assetPaymentMulti.value.destination
         });
       }
     }
