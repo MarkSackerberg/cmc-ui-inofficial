@@ -28,11 +28,12 @@ You can use this repo to deploy your own candy machine UI.
   - `addressGate`
   - `allocation`
   - `allowlist`
-  - `assetBurn`
-  - `assetBurnMulti`
-  - `assetPayment`
-  - `assetPaymentMulti`
-  - `edition`
+  - `assetBurn` - untested currently - test on devnet and provide feedback please!
+  - `assetBurnMulti` - untested currently - test on devnet and provide feedback please!
+  - `assetMintLimit` - untested currently - test on devnet and provide feedback please!
+  - `assetPayment` - untested currently - test on devnet and provide feedback please!
+  - `assetPaymentMulti` - untested currently - test on devnet and provide feedback please!
+  - `edition` - untested currently - test on devnet and provide feedback please!
   - `endDate`
   - `freezeSolPayment`
   - `freezeTokenPayment`
