@@ -28,6 +28,12 @@ You can use this repo to deploy your own candy machine UI.
   - `addressGate`
   - `allocation`
   - `allowlist`
+  - `assetBurn` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
+  - `assetBurnMulti` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
+  - `assetMintLimit`- [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
+  - `assetPayment` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
+  - `assetPaymentMulti` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
+  - `edition` - untested in [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
   - `endDate`
   - `freezeSolPayment`
   - `freezeTokenPayment`
