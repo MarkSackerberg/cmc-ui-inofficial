@@ -9,7 +9,7 @@ import {
   route,
   getMerkleProof,
   safeFetchAllowListProofFromSeeds,
-  mintV2,
+  mintV1,
 } from "@metaplex-foundation/mpl-core-candy-machine";
 import {
   TokenStandard,
@@ -30,6 +30,7 @@ import {
   BlockhashWithExpiryBlockHeight,
 } from "@metaplex-foundation/umi";
 import {
+  DasApiAssetAndAssetMintLimit,
   DigitalAssetWithTokenAndNftMintLimit,
   GuardReturn,
 } from "./checkerHelper";
@@ -78,6 +79,7 @@ export const chooseGuardToUse = (
 export const mintArgsBuilder = (
   guardToUse: GuardGroup<DefaultGuardSet>,
   ownedTokens: DigitalAssetWithTokenAndNftMintLimit[],
+  ownedCoreAssets: DasApiAssetAndAssetMintLimit[],
   amount: number
 ) => {
   const guards = guardToUse.guards;
@@ -96,6 +98,102 @@ export const mintArgsBuilder = (
         console.error(`allowlist for guard ${guardToUse.label} not found!`);
       } else {
         mintArgs.allowList = some({ merkleRoot: getMerkleRoot(allowlist) });
+      }
+    }
+
+    if (guards.assetBurn.__option === "Some") {
+      const requiredCollection = guards.assetBurn.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection
+      );
+      if (!nft) {
+        console.error("no asset to burn found!");
+      } else {
+        mintArgs.assetBurn = some({
+          asset: nft.publicKey,
+          requiredCollection
+        });
+      }
+    }
+
+    if (guards.assetBurnMulti.__option === "Some") {
+      const requiredCollection = guards.assetBurnMulti.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const assets = ownedCoreAssets.filter(
+        (el) =>
+          el.grouping &&
+          el.grouping[0] &&
+          el.grouping[0].group_value === requiredCollection
+      );
+      if (!assets) {
+        console.error("no asset to burn found!");
+      } else {
+        mintArgs.assetBurnMulti = some({
+          assets: assets.map(asset => asset.id),
+          requiredCollection,
+        });
+      }
+    }
+
+    if (guards.assetPayment.__option === "Some") {
+      const requiredCollection = guards.assetPayment.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection
+      );
+      if (!nft) {
+        console.error("no asset to pay found!");
+      } else {
+        mintArgs.assetPayment = some({
+          asset: nft.publicKey,
+          requiredCollection,
+          destination: guards.assetPayment.value.destination
+        });
+      }
+    }
+
+    if (guards.assetPaymentMulti.__option === "Some") {
+      const requiredCollection = guards.assetPaymentMulti.value.requiredCollection;
+      //TODO: have the use choose the NFT
+      const assets = ownedCoreAssets.filter(
+        (el) =>
+          el.grouping &&
+          el.grouping[0] &&
+          el.grouping[0].group_value === requiredCollection
+      );
+      if (!assets) {
+        console.error("no asset to pay found!");
+      } else {
+        mintArgs.assetPaymentMulti = some({
+          assets: assets.map(asset => asset.id),
+          requiredCollection,
+          destination: guards.assetPaymentMulti.value.destination
+        });
+      }
+    }
+
+    if (guards.assetMintLimit.__option === "Some") {
+      const requiredCollection = guards.assetMintLimit.value.requiredCollection;
+      const nft = ownedTokens.find(
+        (el) =>
+          el.metadata.collection.__option === "Some" &&
+          el.metadata.collection.value.key === requiredCollection &&
+          el.nftMintLimit! > 0
+      );
+      if (!nft || !nft.nftMintLimit) {
+        console.error("no asset for assetMintLimit found!");
+      } else {
+        nft.nftMintLimit = nft.nftMintLimit - 1;
+
+        mintArgs.assetMintLimit = some({
+          id: guards.assetMintLimit.value.id,
+          asset: nft.publicKey,
+        });
       }
     }
 
@@ -399,7 +497,7 @@ export const buildTx = (
   buyBeer: boolean
 ) => {
   let tx = transactionBuilder().add(
-    mintV2(umi, {
+    mintV1(umi, {
       candyMachine: candyMachine.publicKey,
       collection: candyMachine.collectionMint,
       asset: nftMint,
@@ -464,7 +562,7 @@ export const buildTxs = async (
       mintArgs = mintArgsArray[i];
     }
     builder = builder.add(
-      mintV2(umi, {
+      mintV1(umi, {
         candyMachine: candyMachine.publicKey,
         collection: candyMachine.collectionMint,
         asset: nftMints[i],

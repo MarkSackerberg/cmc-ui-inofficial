@@ -28,12 +28,12 @@ You can use this repo to deploy your own candy machine UI.
   - `addressGate`
   - `allocation`
   - `allowlist`
-  - `assetBurn` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
-  - `assetBurnMulti` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
-  - `assetMintLimit`- [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
-  - `assetPayment` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
-  - `assetPaymentMulti` - [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
-  - `edition` - untested in [special branch](https://github.com/MarkSackerberg/cmc-ui-inofficial/tree/add-guards)
+  - `assetBurn` - untested currently - test on devnet and provide feedback please!
+  - `assetBurnMulti` - untested currently - test on devnet and provide feedback please!
+  - `assetMintLimit` - untested currently - test on devnet and provide feedback please!
+  - `assetPayment` - untested currently - test on devnet and provide feedback please!
+  - `assetPaymentMulti` - untested currently - test on devnet and provide feedback please!
+  - `edition` - untested currently - test on devnet and provide feedback please!
   - `endDate`
   - `freezeSolPayment`
   - `freezeTokenPayment`
@@ -61,7 +61,7 @@ You can use this repo to deploy your own candy machine UI.
 ## How to use
 1. Clone this repo
 2. Run `pnpm install`
-3. copy the `.env.example` file to a new `.env` file and fill in the NEXT_PUBLIC_CANDY_MACHINE_ID value. You should have this value after creating your candy machine with sugar. 
+3. copy the `.env.example` file to a new `.env` file and fill in the `NEXT_PUBLIC_CANDY_MACHINE_ID` value. You should have this value after creating your candy machine with sugar. Also fill `NEXT_PUBLIC_RPC` to your [RPC URL. It should support Metaplex DAS](https://developers.metaplex.com/rpc-providers).
 3. Run `pnpm run dev`
 4. Open your browser at `http://localhost:3000`
 5. Connect your wallet which you used to create the candy machine

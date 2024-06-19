@@ -7,7 +7,7 @@ import { DigitalAssetWithToken, JsonMetadata } from "@metaplex-foundation/mpl-to
 import dynamic from "next/dynamic";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { useUmi } from "../utils/useUmi";
-import { fetchCandyMachine, safeFetchCandyGuard, CandyGuard, CandyMachine, AccountVersion } from "@metaplex-foundation/mpl-core-candy-machine"
+import { fetchCandyMachine, safeFetchCandyGuard, CandyGuard, CandyMachine } from "@metaplex-foundation/mpl-core-candy-machine"
 import styles from "../styles/Home.module.css";
 import { guardChecker } from "../utils/checkAllowed";
 import { Center, Card, CardHeader, CardBody, StackDivider, Heading, Stack, useToast, Text, Skeleton, useDisclosure, Button, Modal, ModalBody, ModalCloseButton, ModalContent, Image, ModalHeader, ModalOverlay, Box, Divider, VStack, Flex } from '@chakra-ui/react';
@@ -17,6 +17,7 @@ import { ShowNft } from "../components/showNft";
 import { InitializeModal } from "../components/initializeModal";
 import { image, headerText } from "../settings";
 import { useSolanaTime } from "@/utils/SolanaTimeContext";
+import { DasApiAsset } from "@metaplex-foundation/digital-asset-standard-api";
 
 const WalletMultiButtonDynamic = dynamic(
   async () =>
@@ -58,18 +59,6 @@ const useCandyMachine = (
         let candyMachine;
         try {
           candyMachine = await fetchCandyMachine(umi, publicKey(candyMachineId));
-          //verify CM Version
-          if (candyMachine.version != AccountVersion.V2){
-            toast({
-              id: "wrong-account-version",
-              title: "Wrong candy machine account version!",
-              description: "Please use latest sugar to create your candy machine. Need Account Version 2!",
-              status: "error",
-              duration: 999999,
-              isClosable: true,
-            });
-            return;
-          }
         } catch (e) {
           console.error(e);
           toast({
@@ -125,6 +114,8 @@ export default function Home() {
   const [isAllowed, setIsAllowed] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [ownedTokens, setOwnedTokens] = useState<DigitalAssetWithToken[]>();
+  const [ownedCoreAssets, setOwnedCoreAssets] = useState<DasApiAsset[]>();
+
   const [guards, setGuards] = useState<GuardReturn[]>([
     { label: "startDefault", allowed: false, maxAmount: 0 },
   ]);
@@ -171,7 +162,7 @@ export default function Home() {
       }
       setFirstRun(false);
       
-      const { guardReturn, ownedTokens } = await guardChecker(
+      const { guardReturn, ownedTokens, ownedCoreAssets } = await guardChecker(
         umi, candyGuard, candyMachine, solanaTime
       );
 

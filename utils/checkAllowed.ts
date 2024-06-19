@@ -1,6 +1,9 @@
 import {
   AddressGate,
   Allocation,
+  AssetBurn,
+  AssetPayment,
+  AssetPaymentMulti,
   CandyGuard,
   CandyMachine,
   EndDate,
@@ -40,6 +43,10 @@ import {
   calculateMintable,
   nftMintLimitChecker,
   DigitalAssetWithTokenAndNftMintLimit,
+  DasApiAssetAndAssetMintLimit,
+  checkCoreAssetsRequired,
+  assetMintLimitChecker,
+  ownedCoreAssetChecker,
 } from "./checkerHelper";
 import { allowLists } from "./../allowlist";
 import {
@@ -57,11 +64,12 @@ export const guardChecker = async (
   let guardReturn: GuardReturn[] = [];
 
   let ownedTokens: DigitalAssetWithTokenAndNftMintLimit[] = [];
+  let ownedCoreAssets: DasApiAssetAndAssetMintLimit[] = [];
   if (!candyGuard) {
     if (guardReturn.length === 0) {
       //guardReturn.push({ label: "default", allowed: false });
     }
-    return { guardReturn, ownedNfts: ownedTokens };
+    return { guardReturn, ownedNfts: ownedTokens, ownedCoreAssets };
   }
 
   let guardsToCheck: { label: string; guards: GuardSet }[] = candyGuard.groups;
@@ -80,7 +88,7 @@ export const guardChecker = async (
         maxAmount: 0,
       });
     }
-    return { guardReturn, ownedNfts: ownedTokens };
+    return { guardReturn, ownedNfts: ownedTokens, ownedCoreAssets };
   }
 
   if (
@@ -96,7 +104,7 @@ export const guardChecker = async (
         maxAmount: 0,
       });
     }
-    return { guardReturn, ownedNfts: ownedTokens };
+    return { guardReturn, ownedNfts: ownedTokens, ownedCoreAssets };
   }
 
   if (candyMachine.authority === umi.identity.publicKey) {
@@ -118,16 +126,20 @@ export const guardChecker = async (
           maxAmount: 0,
         });
       }
-      return { guardReturn, ownedNfts: ownedTokens };
+      return { guardReturn, ownedNfts: ownedTokens, ownedCoreAssets };
     }
   }
 
   if (checkTokensRequired(guardsToCheck)) {
-    ownedTokens = await fetchAllDigitalAssetWithTokenByOwner(
-      umi,
-      umi.identity.publicKey
-    );
+    ownedTokens = await fetchAllDigitalAssetWithTokenByOwner(umi, 
+      umi.identity.publicKey);
   }
+
+  if (checkCoreAssetsRequired(guardsToCheck)) {
+    const assetList = await umi.rpc.getAssetsByOwner({
+      owner: umi.identity.publicKey})
+    ownedCoreAssets = assetList.items;
+  }  
 
   for (const eachGuard of guardsToCheck) {
     const singleGuard = eachGuard.guards;
@@ -182,6 +194,92 @@ export const guardChecker = async (
           maxAmount: 0,
         });
         console.info(`Guard ${eachGuard.label} wallet not allowlisted!`);
+        continue;
+      }
+    }
+
+    if (singleGuard.assetBurn.__option === "Some") {
+      const assetBurn = singleGuard.assetBurn as Some<AssetBurn>;
+      const payableAmount = await ownedCoreAssetChecker(
+        ownedCoreAssets,
+        assetBurn.value.requiredCollection
+      );
+      mintableAmount = calculateMintable(mintableAmount, payableAmount);
+      if (payableAmount === 0) {
+        guardReturn.push({
+          label: eachGuard.label,
+          allowed: false,
+          reason: "No Asset to burn!",
+          maxAmount: 0,
+        });
+        console.info(`${eachGuard.label}: No Asset to burn!`);
+        continue;
+      }
+    }
+
+    if (singleGuard.assetMintLimit.__option === "Some") {
+      const { assetMintLimitAssets, ownedCoreAssets: newOwnedCoreAssets  } = await assetMintLimitChecker(
+        umi,
+        candyMachine,
+        eachGuard,
+        ownedCoreAssets
+      );
+      ownedCoreAssets = newOwnedCoreAssets;
+      if (!assetMintLimitAssets) {
+        continue;
+      }
+      const totalAmount = assetMintLimitAssets.reduce(
+        (sum, current) => sum + current.assetMintLimit!,
+        0
+      );
+      mintableAmount = calculateMintable(mintableAmount, totalAmount);
+      if (totalAmount < 1) {
+        guardReturn.push({
+          label: eachGuard.label,
+          allowed: false,
+          reason: "Asset Mint limit of all owned NFT reached",
+          maxAmount: 0,
+        });
+        console.info(`Guard ${eachGuard.label}; assetMintLimit reached`);
+        continue;
+      }
+    }
+
+    if (singleGuard.assetPayment.__option === "Some") {
+      const assetPayment = singleGuard.assetPayment as Some<AssetPayment>;
+      const payableAmount = await ownedCoreAssetChecker(
+        ownedCoreAssets,
+        assetPayment.value.requiredCollection
+      );
+      mintableAmount = calculateMintable(mintableAmount, payableAmount);
+      if (payableAmount === 0) {
+        guardReturn.push({
+          label: eachGuard.label,
+          allowed: false,
+          reason: "No Asset to pay!",
+          maxAmount: 0,
+        });
+        console.info(`${eachGuard.label}: No Asset to pay!`);
+        continue;
+      }
+    }
+
+    if (singleGuard.assetPaymentMulti.__option === "Some") {
+      const assetPaymentMulti = singleGuard.assetPaymentMulti as Some<AssetPaymentMulti>;
+      const payableAmount = await ownedCoreAssetChecker(
+        ownedCoreAssets,
+        assetPaymentMulti.value.requiredCollection
+      );
+      const multiAmount = payableAmount / assetPaymentMulti.value.num;
+      mintableAmount = calculateMintable(mintableAmount, multiAmount);
+      if (payableAmount === 0) {
+        guardReturn.push({
+          label: eachGuard.label,
+          allowed: false,
+          reason: "No Asset to pay!",
+          maxAmount: 0,
+        });
+        console.info(`${eachGuard.label}: No Asset to pay!`);
         continue;
       }
     }
@@ -511,5 +609,5 @@ export const guardChecker = async (
       maxAmount: mintableAmount,
     });
   }
-  return { guardReturn, ownedTokens };
+  return { guardReturn, ownedTokens, ownedCoreAssets };
 };
