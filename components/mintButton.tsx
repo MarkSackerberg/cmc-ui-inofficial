@@ -1,5 +1,5 @@
-import { CandyGuard, CandyMachine, mintV2 } from "@metaplex-foundation/mpl-core-candy-machine";
-import { GuardReturn } from "../utils/checkerHelper";
+import { CandyGuard, CandyMachine } from "@metaplex-foundation/mpl-core-candy-machine";
+import { DasApiAssetAndAssetMintLimit, GuardReturn } from "../utils/checkerHelper";
 import {
   AddressLookupTableInput,
   KeypairSigner,
@@ -116,7 +116,8 @@ const mintClick = async (
   guardList: GuardReturn[],
   setGuardList: Dispatch<SetStateAction<GuardReturn[]>>,
   onOpen: () => void,
-  setCheckEligibility: Dispatch<SetStateAction<boolean>>
+  setCheckEligibility: Dispatch<SetStateAction<boolean>>,
+  ownedCoreAssets: DasApiAssetAndAssetMintLimit[]
 ) => {
   const guardToUse = chooseGuardToUse(guard, candyGuard);
   if (!guardToUse.guards) {
@@ -420,6 +421,7 @@ type Props = {
   >;
   onOpen: () => void;
   setCheckEligibility: Dispatch<SetStateAction<boolean>>;
+  ownedCoreAssets: DasApiAssetAndAssetMintLimit[] | undefined;
 };
 
 export function ButtonList({
@@ -433,6 +435,7 @@ export function ButtonList({
   setMintsCreated,
   onOpen,
   setCheckEligibility,
+  ownedCoreAssets = []
 }: Props): JSX.Element {
   const solanaTime = useSolanaTime();
   const [numberInputValues, setNumberInputValues] = useState<{
@@ -570,7 +573,8 @@ export function ButtonList({
                   guardList,
                   setGuardList,
                   onOpen,
-                  setCheckEligibility
+                  setCheckEligibility,
+                  ownedCoreAssets
                 )
               }
               key={buttonGuard.label}

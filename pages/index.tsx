@@ -168,6 +168,7 @@ export default function Home() {
 
       setOwnedTokens(ownedTokens);
       setGuards(guardReturn);
+      setOwnedCoreAssets(ownedCoreAssets);
       setIsAllowed(false);
 
       let allowed = false;
@@ -251,12 +252,13 @@ export default function Home() {
                   setMintsCreated={setMintsCreated}
                   onOpen={onShowNftOpen}
                   setCheckEligibility={setCheckEligibility}
+                  ownedCoreAssets={ownedCoreAssets}
                 />
               )}
             </Stack>
           </CardBody>
         </Card >
-        {umi.identity.publicKey === candyMachine?.authority ? (
+        { umi.identity.publicKey === candyMachine?.authority ? (
           <>
             <Center>
               <Button backgroundColor={"red.200"} marginTop={"10"} onClick={onInitializerOpen}>Admin Menu</Button>
