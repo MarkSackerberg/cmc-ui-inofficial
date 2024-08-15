@@ -151,7 +151,7 @@ const mintClick = async (
         isClosable: true,
       });
       const latestBlockhash = (await umi.rpc.getLatestBlockhash({commitment: "finalized"}));
-      routeBuild.setBlockhash(latestBlockhash)
+      routeBuild = routeBuild.setBlockhash(latestBlockhash)
       await umi.rpc
       .sendTransaction(routeBuild.build(umi), { skipPreflight:true, maxRetries: 1, preflightCommitment: "finalized", commitment: "finalized" })
     }
