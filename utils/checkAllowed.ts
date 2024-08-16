@@ -2,6 +2,7 @@ import {
   AddressGate,
   Allocation,
   AssetBurn,
+  AssetBurnMulti,
   AssetPayment,
   AssetPaymentMulti,
   CandyGuard,
@@ -205,6 +206,26 @@ export const guardChecker = async (
         assetBurn.value.requiredCollection
       );
       mintableAmount = calculateMintable(mintableAmount, payableAmount);
+      if (payableAmount === 0) {
+        guardReturn.push({
+          label: eachGuard.label,
+          allowed: false,
+          reason: "No Asset to burn!",
+          maxAmount: 0,
+        });
+        console.info(`${eachGuard.label}: No Asset to burn!`);
+        continue;
+      }
+    }
+
+    if (singleGuard.assetBurnMulti.__option === "Some") {
+      const assetBurnMulti = singleGuard.assetBurnMulti as Some<AssetBurnMulti>;
+      const payableAmount = await ownedCoreAssetChecker(
+        ownedCoreAssets,
+        assetBurnMulti.value.requiredCollection
+      );
+      const multiAmount = payableAmount / assetBurnMulti.value.num;
+      mintableAmount = calculateMintable(mintableAmount, multiAmount);
       if (payableAmount === 0) {
         guardReturn.push({
           label: eachGuard.label,
