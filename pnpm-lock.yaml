@@ -21,11 +21,11 @@ dependencies:
     specifier: ^1.0.3
     version: 1.0.3(@metaplex-foundation/umi@0.9.1)
   '@metaplex-foundation/mpl-core':
-    specifier: ^1.0.1
-    version: 1.0.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0)
+    specifier: ^1.0.2
+    version: 1.1.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0)
   '@metaplex-foundation/mpl-core-candy-machine':
-    specifier: ^0.2.1
-    version: 0.2.1(@metaplex-foundation/mpl-core@1.0.1)(@metaplex-foundation/umi@0.9.1)
+    specifier: ^0.2.3
+    version: 0.2.3(@metaplex-foundation/mpl-core@1.1.1)(@metaplex-foundation/umi@0.9.1)
   '@metaplex-foundation/mpl-token-metadata':
     specifier: ^3.2.1
     version: 3.2.1(@metaplex-foundation/umi@0.9.1)
@@ -3642,13 +3642,13 @@ packages:
       package.json: 2.0.1
     dev: false
 
-  /@metaplex-foundation/mpl-core-candy-machine@0.2.1(@metaplex-foundation/mpl-core@1.0.1)(@metaplex-foundation/umi@0.9.1):
-    resolution: {integrity: sha512-T4ezQXpPDVIJ2q66jsSswEEN7KyY+uEiBto3JnYLBUBelAW/A/JNM3mJIGuxqs2sgIRjmB1VVQOefZwoNP6MFg==}
+  /@metaplex-foundation/mpl-core-candy-machine@0.2.3(@metaplex-foundation/mpl-core@1.1.1)(@metaplex-foundation/umi@0.9.1):
+    resolution: {integrity: sha512-bKktDKPLEZjonauSoPdfmEhz9odWzh07AdwMRnDQNDrjVG7JGvU99xK2h91O7P0YDo+bbX8yLGRhHlPRnGp9zg==}
     peerDependencies:
-      '@metaplex-foundation/mpl-core': '>= 0.4.7 < 1'
+      '@metaplex-foundation/mpl-core': '>= 0.4.7'
       '@metaplex-foundation/umi': '>= 0.8.2 < 1'
     dependencies:
-      '@metaplex-foundation/mpl-core': 1.0.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0)
+      '@metaplex-foundation/mpl-core': 1.1.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0)
       '@metaplex-foundation/mpl-token-metadata': 3.0.0-alpha.27(@metaplex-foundation/umi@0.9.1)
       '@metaplex-foundation/mpl-toolbox': 0.9.4(@metaplex-foundation/umi@0.9.1)
       '@metaplex-foundation/umi': 0.9.1
@@ -3656,13 +3656,14 @@ packages:
       merkletreejs: 0.3.11
     dev: false
 
-  /@metaplex-foundation/mpl-core@1.0.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0):
-    resolution: {integrity: sha512-Yjg/X2fHmGONmUx8e/YEYDQQ+oCCZv52B/H+gxSK5i4hm+spGUYwwsfJrdadOym8m1/aEswOOpOOiXmyX62Z8A==}
+  /@metaplex-foundation/mpl-core@1.1.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0):
+    resolution: {integrity: sha512-h1kLw+cGaV8SiykoHDb1/G01+VYqtJXAt0uGuO5+2Towsdtc6ET4M62iqUnh4EacTVMIW1yYHsKsG/LYWBCKaA==}
     peerDependencies:
       '@metaplex-foundation/umi': '>=0.8.2 < 1'
       '@noble/hashes': ^1.3.1
     dependencies:
       '@metaplex-foundation/umi': 0.9.1
+      '@msgpack/msgpack': 3.0.0-beta2
       '@noble/hashes': 1.4.0
     dev: false
 
@@ -3879,6 +3880,11 @@ packages:
   /@mobily/ts-belt@3.13.1:
     resolution: {integrity: sha512-K5KqIhPI/EoCTbA6CGbrenM9s41OouyK8A03fGJJcla/zKucsgLbz8HNbeseoLarRPgyWJsUyCYqFhI7t3Ra9Q==}
     engines: {node: '>= 10.*'}
+    dev: false
+
+  /@msgpack/msgpack@3.0.0-beta2:
+    resolution: {integrity: sha512-y+l1PNV0XDyY8sM3YtuMLK5vE3/hkfId+Do8pLo/OPxfxuFAUwcGz3oiiUuV46/aBpwTzZ+mRWVMtlSKbradhw==}
+    engines: {node: '>= 14'}
     dev: false
 
   /@multiformats/murmur3@1.1.3:
