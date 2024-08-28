@@ -28,6 +28,8 @@ import {
 import { DigitalAssetWithToken } from "@metaplex-foundation/mpl-token-metadata";
 import { createStandaloneToast } from "@chakra-ui/react";
 import { DasApiAsset } from "@metaplex-foundation/digital-asset-standard-api";
+import { DasExtra } from "@metaplex-foundation/mpl-core-das/dist/src/types";
+import { AssetV1 } from "@metaplex-foundation/mpl-core";
 
 export interface GuardReturn {
   label: string;
@@ -43,7 +45,7 @@ export type DigitalAssetWithTokenAndNftMintLimit = DigitalAssetWithToken & {
   nftMintLimitPda?: Pda;
 };
 
-export type DasApiAssetAndAssetMintLimit = DasApiAsset & {
+export type DasApiAssetAndAssetMintLimit = AssetV1 & DasExtra & {
   assetMintLimit?: number;
   assetMintLimitPda?: Pda;
 }
@@ -245,14 +247,14 @@ export const assetMintLimitChecker = async (
 
   const collectionAssets = ownedCoreAssets.filter(
     (el) =>
-      el.grouping[0].group_value ===
+      el.updateAuthority.address ===
         assetMintLimit.value.requiredCollection
   );
   try {
     let counterPromises = collectionAssets.map((asset) => {
       const pda = findAssetMintCounterPda(umi, {
         id: assetMintLimit.value.id,
-        asset: asset.id,
+        asset: asset.publicKey,
         candyGuard: candyMachine.mintAuthority,
         candyMachine: candyMachine.publicKey,
       });
@@ -285,7 +287,7 @@ export const assetMintLimitChecker = async (
       const resultObject = {
         assetMintLimitAssets: filteredResults,
         ownedCoreAssets: ownedCoreAssets.map((asset) => {
-          const matchingAsset = filteredResults.find((result) => result.id === asset.id);
+          const matchingAsset = filteredResults.find((result) => result.publicKey === asset.publicKey);
           if (matchingAsset) {
             return {
               ...asset,
@@ -326,12 +328,12 @@ export const ownedNftChecker = async (
 };
 
 export const ownedCoreAssetChecker = async (
-  ownedNfts: DasApiAsset[],
+  ownedNfts: DasApiAssetAndAssetMintLimit[],
   requiredCollection: PublicKey
 ) => {
   const count = ownedNfts.filter(
     (el) =>
-      el.grouping[0].group_value === requiredCollection
+      el.updateAuthority.address === requiredCollection
   ).length;
   return count;
 };

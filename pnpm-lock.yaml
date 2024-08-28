@@ -26,6 +26,9 @@ dependencies:
   '@metaplex-foundation/mpl-core-candy-machine':
     specifier: ^0.2.3
     version: 0.2.3(@metaplex-foundation/mpl-core@1.1.1)(@metaplex-foundation/umi@0.9.1)
+  '@metaplex-foundation/mpl-core-das':
+    specifier: ^0.0.3
+    version: 0.0.3(@metaplex-foundation/digital-asset-standard-api@1.0.3)(@metaplex-foundation/mpl-core@1.1.1)(@metaplex-foundation/umi@0.9.1)
   '@metaplex-foundation/mpl-token-metadata':
     specifier: ^3.2.1
     version: 3.2.1(@metaplex-foundation/umi@0.9.1)
@@ -3654,6 +3657,18 @@ packages:
       '@metaplex-foundation/umi': 0.9.1
       '@noble/hashes': 1.4.0
       merkletreejs: 0.3.11
+    dev: false
+
+  /@metaplex-foundation/mpl-core-das@0.0.3(@metaplex-foundation/digital-asset-standard-api@1.0.3)(@metaplex-foundation/mpl-core@1.1.1)(@metaplex-foundation/umi@0.9.1):
+    resolution: {integrity: sha512-5rx4R1F8VdSVcO1+sJMw0dhZ3S6E7H8GcWy0n+hTOxvUAIidD57AMoT0JuWuuDtedHO6/XmzueOXQvWFoCSmeA==}
+    peerDependencies:
+      '@metaplex-foundation/digital-asset-standard-api': '>=1.0.4'
+      '@metaplex-foundation/mpl-core': '>=1.0.1'
+      '@metaplex-foundation/umi': '>=0.8.2 < 1'
+    dependencies:
+      '@metaplex-foundation/digital-asset-standard-api': 1.0.3(@metaplex-foundation/umi@0.9.1)
+      '@metaplex-foundation/mpl-core': 1.1.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0)
+      '@metaplex-foundation/umi': 0.9.1
     dev: false
 
   /@metaplex-foundation/mpl-core@1.1.1(@metaplex-foundation/umi@0.9.1)(@noble/hashes@1.4.0):

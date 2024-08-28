@@ -124,15 +124,13 @@ export const mintArgsBuilder = (
       //TODO: have the use choose the NFT
       const assets = ownedCoreAssets.filter(
         (el) =>
-          el.grouping &&
-          el.grouping[0] &&
-          el.grouping[0].group_value === requiredCollection
+          el.updateAuthority.address === requiredCollection
       );
       if (!assets) {
         console.error("no asset to burn found!");
       } else {
         mintArgs.assetBurnMulti = some({
-          assets: assets.map(asset => asset.id),
+          assets: assets.map(asset => asset.publicKey),
           requiredCollection,
         });
       }
@@ -162,15 +160,13 @@ export const mintArgsBuilder = (
       //TODO: have the use choose the NFT
       const assets = ownedCoreAssets.filter(
         (el) =>
-          el.grouping &&
-          el.grouping[0] &&
-          el.grouping[0].group_value === requiredCollection
+          el.updateAuthority.address === requiredCollection
       );
       if (!assets) {
         console.error("no asset to pay found!");
       } else {
         mintArgs.assetPaymentMulti = some({
-          assets: assets.map(asset => asset.id),
+          assets: assets.map(asset => asset.publicKey),
           requiredCollection,
           destination: guards.assetPaymentMulti.value.destination
         });

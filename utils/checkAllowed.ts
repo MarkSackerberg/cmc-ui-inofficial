@@ -55,6 +55,7 @@ import {
   fetchAllDigitalAssetWithTokenByOwner,
 } from "@metaplex-foundation/mpl-token-metadata";
 import { checkAtaValid } from "./validateConfig";
+import { das } from "@metaplex-foundation/mpl-core-das";
 
 export const guardChecker = async (
   umi: Umi,
@@ -137,9 +138,9 @@ export const guardChecker = async (
   }
 
   if (checkCoreAssetsRequired(guardsToCheck)) {
-    const assetList = await umi.rpc.getAssetsByOwner({
+    const assetList = await das.getAssetsByOwner(umi,{
       owner: umi.identity.publicKey})
-    ownedCoreAssets = assetList.items;
+    ownedCoreAssets = assetList;
   }  
 
   for (const eachGuard of guardsToCheck) {
@@ -249,10 +250,12 @@ export const guardChecker = async (
       if (!assetMintLimitAssets) {
         continue;
       }
-      const totalAmount = assetMintLimitAssets.reduce(
-        (sum, current) => sum + current.assetMintLimit!,
-        0
-      );
+      let totalAmount: number = 0;
+      assetMintLimitAssets.forEach(element => {
+        if (element.assetMintLimit){
+          totalAmount = totalAmount + element.assetMintLimit
+        }        
+      });
       mintableAmount = calculateMintable(mintableAmount, totalAmount);
       if (totalAmount < 1) {
         guardReturn.push({
@@ -415,10 +418,12 @@ export const guardChecker = async (
       if (!nftMintLimitAssets) {
         continue;
       }
-      const totalAmount = nftMintLimitAssets.reduce(
-        (sum, current) => sum + current.nftMintLimit!,
-        0
-      );
+      let totalAmount: number = 0;
+      nftMintLimitAssets.forEach(element => {
+        if (element.nftMintLimit){
+          totalAmount = totalAmount + element.nftMintLimit
+        }        
+      });
       mintableAmount = calculateMintable(mintableAmount, totalAmount);
       if (totalAmount < 1) {
         guardReturn.push({

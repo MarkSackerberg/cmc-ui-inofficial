@@ -12,12 +12,11 @@ import styles from "../styles/Home.module.css";
 import { guardChecker } from "../utils/checkAllowed";
 import { Center, Card, CardHeader, CardBody, StackDivider, Heading, Stack, useToast, Text, Skeleton, useDisclosure, Button, Modal, ModalBody, ModalCloseButton, ModalContent, Image, ModalHeader, ModalOverlay, Box, Divider, VStack, Flex } from '@chakra-ui/react';
 import { ButtonList } from "../components/mintButton";
-import { GuardReturn } from "../utils/checkerHelper";
+import { DasApiAssetAndAssetMintLimit, GuardReturn } from "../utils/checkerHelper";
 import { ShowNft } from "../components/showNft";
 import { InitializeModal } from "../components/initializeModal";
 import { image, headerText } from "../settings";
 import { useSolanaTime } from "@/utils/SolanaTimeContext";
-import { DasApiAsset } from "@metaplex-foundation/digital-asset-standard-api";
 
 const WalletMultiButtonDynamic = dynamic(
   async () =>
@@ -114,7 +113,7 @@ export default function Home() {
   const [isAllowed, setIsAllowed] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [ownedTokens, setOwnedTokens] = useState<DigitalAssetWithToken[]>();
-  const [ownedCoreAssets, setOwnedCoreAssets] = useState<DasApiAsset[]>();
+  const [ownedCoreAssets, setOwnedCoreAssets] = useState<DasApiAssetAndAssetMintLimit[]>();
 
   const [guards, setGuards] = useState<GuardReturn[]>([
     { label: "startDefault", allowed: false, maxAmount: 0 },
