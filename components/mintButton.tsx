@@ -180,7 +180,6 @@ const mintClick = async (
     }
 
     const mintArgsArray = mintArgsBuilder(guardToUse, ownedTokens, ownedCoreAssets, mintAmount);
-    console.log("mintArgsArray",mintArgsArray)
     const latestBlockhash = (await umi.rpc.getLatestBlockhash({commitment: "finalized"}));
 
     const mintTxs: { transaction: Transaction; signers: Signer[] }[] =
@@ -243,16 +242,13 @@ const mintClick = async (
       status: "success",
       duration: 3000,
     });
-    console.log("vor verify")
     const successfulMints = await verifyTx(umi, signatures, nftsigners, latestBlockhash, "finalized");
-    console.log("nach verify")
     updateLoadingText(
       "Fetching your NFT",
       guardList,
       guardToUse.label,
       setGuardList
     );
-    console.log("vor fetch nft")
     // Filter out successful mints and map to fetch promises
     const fetchNftPromises = successfulMints.map((mintResult) =>
       fetchNft(umi, mintResult).then((nftData) => ({
@@ -262,7 +258,6 @@ const mintClick = async (
     );
 
     const fetchedNftsResults = await Promise.all(fetchNftPromises);
-    console.log("nach fetch nft")
     // Prepare data for setting mintsCreated
     let newMintsCreated: { mint: PublicKey; offChainMetadata: JsonMetadata }[] =
       [];
