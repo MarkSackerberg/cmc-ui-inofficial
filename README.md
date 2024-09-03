@@ -61,7 +61,7 @@ You can use this repo to deploy your own candy machine UI.
 ## How to use
 1. Clone this repo
 2. Run `pnpm install`
-3. copy the `.env.example` file to a new `.env` file and fill in the `NEXT_PUBLIC_CANDY_MACHINE_ID` value. You should have this value after creating your candy machine with sugar. Also fill `NEXT_PUBLIC_RPC` to your [RPC URL. It should support Metaplex DAS](https://developers.metaplex.com/rpc-providers).
+3. copy the `.env.example` file to a new `.env` file and fill in the `NEXT_PUBLIC_CANDY_MACHINE_ID` value. You should have this value after creating your candy machine. Also fill `NEXT_PUBLIC_RPC` to your [RPC URL. It should support Metaplex DAS](https://developers.metaplex.com/rpc-providers).
 3. Run `pnpm run dev`
 4. Open your browser at `http://localhost:3000`
 5. Connect your wallet which you used to create the candy machine
