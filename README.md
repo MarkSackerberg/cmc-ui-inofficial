@@ -57,6 +57,7 @@ You can use this repo to deploy your own candy machine UI.
 ## Prerequisites
 - [pnpm](https://pnpm.io/installation) as package manager - I used 8.1.0
 - Your deployed candy machine. If you don't know how to deploy you might want to look into the [Developer Hub](https://developers.metaplex.com/core-candy-machine/create) or the inofficial [`ts-sugar`](https://github.com/cryptorrivem/ts-sugar) CLI.
+- Access to a RPC with DAS or Metaplex Aura
 
 ## How to use
 1. Clone this repo
