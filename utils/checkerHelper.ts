@@ -368,7 +368,7 @@ export const checkDateRequired = (
   guards: { label: string; guards: GuardSet }[]
 ) => {
   for (const guard of guards) {
-    if (guard.guards.startDate || guard.guards.endDate) {
+    if (guard.guards.startDate.__option === 'Some' || guard.guards.endDate.__option === 'Some') {
       return true;
     }
   }
@@ -381,7 +381,7 @@ export const checkSolBalanceRequired = (
 ) => {
   let solBalanceRequired: boolean = false;
   guards.forEach((guard) => {
-    if (guard.guards.freezeSolPayment || guard.guards.solPayment) {
+    if (guard.guards.freezeSolPayment.__option === 'Some' || guard.guards.solPayment.__option === 'Some') {
       solBalanceRequired = true;
     }
   });
@@ -395,10 +395,10 @@ export const checkTokensRequired = (
   let nftBalanceRequired: boolean = false;
   guards.forEach((guard) => {
     if (
-      guard.guards.nftBurn ||
-      guard.guards.nftGate ||
-      guard.guards.nftPayment ||
-      guard.guards.nftMintLimit
+      guard.guards.nftBurn.__option === "Some" ||
+      guard.guards.nftGate.__option === "Some" ||
+      guard.guards.nftPayment.__option === "Some" ||
+      guard.guards.nftMintLimit.__option === "Some"
     ) {
       nftBalanceRequired = true;
     }
@@ -413,11 +413,11 @@ export const checkCoreAssetsRequired = (
   let coreAssetBalanceRequired: boolean = false;
   guards.forEach((guard) => {
     if (
-      guard.guards.assetBurn ||
-      guard.guards.assetBurnMulti ||
-      guard.guards.assetPayment ||
-      guard.guards.assetPaymentMulti ||
-      guard.guards.assetMintLimit
+      guard.guards.assetBurn.__option === "Some" ||
+      guard.guards.assetBurnMulti.__option === "Some" ||
+      guard.guards.assetPayment.__option === "Some" ||
+      guard.guards.assetPaymentMulti.__option === "Some" ||
+      guard.guards.assetMintLimit.__option === "Some"
     ) {
       coreAssetBalanceRequired = true;
     }
