@@ -1,4 +1,3 @@
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { AppProps } from "next/app";
@@ -11,21 +10,11 @@ import { ChakraProvider } from '@chakra-ui/react'
 import { image, headerText } from 'settings'
 import { SolanaTimeProvider } from "@/utils/SolanaTimeContext";
 
-
 export default function App({ Component, pageProps }: AppProps) {
-  let network = WalletAdapterNetwork.Devnet;
-  if (process.env.NEXT_PUBLIC_ENVIRONMENT === "mainnet-beta" || process.env.NEXT_PUBLIC_ENVIRONMENT === "mainnet") {
-    network = WalletAdapterNetwork.Mainnet;
-  }
   let endpoint = "https://api.devnet.solana.com";
   if (process.env.NEXT_PUBLIC_RPC) {
     endpoint = process.env.NEXT_PUBLIC_RPC;
   }
-  const wallets = useMemo(
-    () => [
-    ],
-    []
-  );
   return (
     <>
       <Head>
@@ -46,7 +35,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <ChakraProvider>
-        <WalletProvider wallets={wallets}>
+        <WalletProvider wallets={[]}>
           <UmiProvider endpoint={endpoint}>
             <WalletModalProvider>
               <SolanaTimeProvider>
